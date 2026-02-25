@@ -3,12 +3,14 @@ import "dotenv/config";
 import cors from "cors";
 import morgan from "morgan";
 import { prisma } from "./db/prisma.js";
+import cookieParser from "cookie-parser";
 import authAPIRouter from "./api/authRouter.js";
 
 const app = express();
 const PORT = process.env.PORT;
 
 app.use(morgan("dev"));
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
@@ -18,8 +20,8 @@ app.use(
   }),
 ); // Настраиваем CORS, чтобы разрешить кросс-доменные запросы с передачей куков
 
-app.use("/api/admin", authAPIRouter);
-
+console.log(process.env["SETUP_TOKEN"]);
+app.use("/api/auth", authAPIRouter);
 app.listen(PORT, () => {
   console.log(`Server start on ${PORT} PORT`);
 });
