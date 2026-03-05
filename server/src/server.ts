@@ -5,6 +5,7 @@ import morgan from "morgan";
 import { prisma } from "./db/prisma.js";
 import cookieParser from "cookie-parser";
 import authAPIRouter from "./api/authRouter.js";
+import artWorkImageAPIRouter from "./api/artworksImagesRouter.js";
 
 const app = express();
 const PORT = process.env.PORT;
@@ -20,8 +21,10 @@ app.use(
   }),
 ); // Настраиваем CORS, чтобы разрешить кросс-доменные запросы с передачей куков
 
-console.log(process.env["SETUP_TOKEN"]);
+// роутеры
 app.use("/api/auth", authAPIRouter);
+app.use("/api", artWorkImageAPIRouter);
+
 app.listen(PORT, () => {
   console.log(`Server start on ${PORT} PORT`);
 });

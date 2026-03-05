@@ -1,5 +1,5 @@
 generator client {
-   provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -22,13 +22,63 @@ model User {
 }
 
 model RefreshToken {
-  id           String   @id @default(uuid())
-  tokenHash    String
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt    DateTime @default(now())
-  revokedAt    DateTime?
-  expiresAt    DateTime
+  id        String    @id @default(uuid())
+  tokenHash String
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+  expiresAt DateTime
 
   @@index([userId])
+}
+
+model Artwork {
+  id          String  @id @default(uuid())
+  title       String
+  slug        String  @unique // SEO и красивые URL
+  description String?
+  year        Int?
+  widthCm     Int?
+  heightCm    Int?
+  materials   String?
+  priceCents  Int? //  корректное хранение денег
+  currency    String? @default("EUR") //  мультивалютность
+
+  isPublished Boolean   @default(false) // черновики и управление видимостью
+  publishedAt DateTime? // сортировка и история публикации
+
+  // обложка
+  coverImageId String?  @unique // одна картинка = максимум одна обложка
+  coverImage   Image?   @relation("ArtworkCover", fields: [coverImageId], references: [id], onDelete: SetNull)
+
+  // галерея
+  images     Image[]     @relation("ArtworkImages")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Image { 
+  id          String  @id @default(uuid())
+
+  // для S3/R2/MinIO
+  key       String   @unique   // например: "artworks/<artworkId>/<uuid>.jpg"
+  url       String  
+  mimeType  String?
+  sizeBytes Int?
+  widthPx   Int?
+  heightPx  Int?
+
+  // связь с Artwork (много изображений на одну картину)
+  artworkId String?
+  artwork   Artwork? @relation("ArtworkImages", fields: [artworkId], references: [id], onDelete: Cascade)
+
+  // обратная связь для cover relation
+  usedAsCoverFor Artwork? @relation("ArtworkCover")
+
+
+  createdAt DateTime @default(now())
+
+  @@index([artworkId])
 }
