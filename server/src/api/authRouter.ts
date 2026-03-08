@@ -195,7 +195,6 @@ router.post("/refresh", async (req: Request, res: Response) => {
   try {
     // Извлечение refresh токена из cookies
     const token = req.cookies?.refresh_token as string | undefined;
-    console.log("token", token);
     // Если токен не найден
     if (!token) return res.status(401).json({ message: "Нет refresh token" });
 
@@ -257,6 +256,5 @@ router.get("/logout", async (req: Request, res: Response) => {
   res.clearCookie("refresh_token", { path: "/" });
   return res.json({ ok: true });
 });
-
 
 export default router;

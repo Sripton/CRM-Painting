@@ -7,7 +7,10 @@ import Home from "./components/Home";
 import Login from "./components/Login";
 import AdminDashboard from "./components/AdminDashboard";
 
+
+
 export default function App() {
+
   return (
     <>
       <BrowserRouter>
@@ -20,6 +23,7 @@ export default function App() {
             <AdminRoute>
               <AdminDashboard />
             </AdminRoute>
+
           } />
         </Routes>
       </BrowserRouter>

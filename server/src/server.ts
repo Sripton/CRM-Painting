@@ -6,6 +6,7 @@ import { prisma } from "./db/prisma.js";
 import cookieParser from "cookie-parser";
 import authAPIRouter from "./api/authRouter.js";
 import artWorkImageAPIRouter from "./api/artworksImagesRouter.js";
+import { error } from "console";
 
 const app = express();
 const PORT = process.env.PORT;
