@@ -1,12 +1,15 @@
 import { Request, Response, Router } from "express";
 import multer from "multer";
-import { uploadBuffer, makeImageKey, deleteFromS3 } from "../services/s3.js";
-import { prisma } from "../db/prisma.js";
-import { requireAuth, requireAdmin } from "../middlewares/authSecurity.js";
+import { uploadBuffer, makeImageKey, deleteFromS3 } from "../../services/s3.js";
+import { prisma } from "../../db/prisma/prisma.js";
+import { requireAuth, requireAdmin } from "../../middlewares/authSecurity.js";
 
 const router = Router();
 // защита middleware
-router.use("/admin", requireAuth, requireAdmin);
+router.use(
+  requireAuth, //  Сначала проверяется токен
+  requireAdmin, // потом роль
+);
 
 // экземпляр multer.
 const upload = multer({
@@ -16,7 +19,7 @@ const upload = multer({
 
 // маршрут
 router.post(
-  "/admin/artworks/:id/images",
+  "/artworks/:id/images",
 
   upload.single("file"), // middleware multer, который извлекает из запроса один файл с полем name = "file". Загруженный файл будет доступен в req.file. Если поле отсутствует или файл не передан, req.file останется undefined.
   async (req: Request, res: Response) => {
@@ -78,7 +81,7 @@ router.post(
 );
 
 // маршрут для удаления  изображения + файла из MinIO
-router.delete("/admin/images/:id", async (req: Request, res: Response) => {
+router.delete("/images/:id", async (req: Request, res: Response) => {
   try {
     const imageId = req.params.id as string;
 

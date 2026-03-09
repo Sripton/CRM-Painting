@@ -6,6 +6,7 @@ export function setAccessToken(token: string | null) {
   accessToken = token;
 }
 
+console.log("accessToken", accessToken);
 // получение token
 export function getAccessToken() {
   // возвращаем установленный token

@@ -5,11 +5,14 @@ import AdminRoute from "./routes/AdminRoute";
 // Компоненты
 import Home from "./components/Home";
 import Login from "./components/Login";
-import AdminDashboard from "./components/AdminDashboard";
+import AdminDashboard from "./components/AdminLayout";
 
+import { useAuth } from "./components/Context/Auth/AuthContext"
 
 
 export default function App() {
+  const { user } = useAuth();
+  console.log("user", user)
 
   return (
     <>

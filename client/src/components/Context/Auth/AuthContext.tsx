@@ -1,4 +1,3 @@
-import axios from 'axios';
 import React, { useState, createContext, useContext, useEffect, useMemo } from 'react'
 import { setAccessToken as saveAccessToken } from "../../../lib/tokenStorage"
 import { api } from '../../../lib/api';
@@ -18,7 +17,7 @@ type AuthContextType = {
   user: User | null; // данные пользователя
   isLoading: boolean;
   setAuth: (token: string, user: User) => void; // функция для установки токена и пользователя (вызывается при успешном входе/регистрации)
-  logout: () => void; // сбрасывает состояние
+  logout: () => Promise<void>; // сбрасывает состояние. Promise<void> асинхронно
 }
 
 // Создание контекста
@@ -38,11 +37,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // функция выхода 
-  function logout() {
-    setAccessToken(null);
-    saveAccessToken(null);
-    setUser(null);
+  async function logout() {
+    try {
+      await api.get("/api/auth/logout")
+    } catch (error) {
+      console.log(error)
+    }
+    setAccessToken(null); // очищаем state
+    saveAccessToken(null) // очищаем token 
+    setUser(null);// очищаем state
   }
+
 
   // при старте приложения делаем попытку восстановить сессию через cookie
   // refresh_token - лежит в httpOnly cookie, JavaScript не читает его напрямую, браузер сам отправляет cookie на сервер

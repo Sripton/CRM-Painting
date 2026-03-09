@@ -1,5 +1,5 @@
 import { Request, Response, Router } from "express";
-import { prisma } from "../db/prisma.js";
+import { prisma } from "../../db/prisma/prisma.js";
 import bcrypt from "bcrypt"; // для сравнения хэшей паролей при логине
 import jwt from "jsonwebtoken"; // для создания и проверки JWT
 import ms, { type StringValue } from "ms"; // для вычисления срока жизни токена в базе
@@ -13,7 +13,7 @@ router.post("/setup", async (req: Request, res: Response) => {
     // Проверка токена
     const token = req.header("x-setup-token"); // x-setup-token: some-long-random-string
     if (
-      !process.env.SETUP_TOKEN || // Есть нету  ли SETUP_TOKEN в .env
+      !process.env.SETUP_TOKEN || // Если нету  ли SETUP_TOKEN в .env
       token !== process.env.SETUP_TOKEN // Совпадает ли токен из запроса с токеном в .env
     ) {
       return res.status(403).json({ message: "Запрещен" });

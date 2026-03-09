@@ -33,6 +33,13 @@ model RefreshToken {
   @@index([userId])
 }
 
+enum ArtworkCategory {
+  PAINTING
+  WATERCOLOR
+  WALL_PAINTING
+}
+
+
 model Artwork {
   id          String  @id @default(uuid())
   title       String
@@ -44,6 +51,8 @@ model Artwork {
   materials   String?
   priceCents  Int? //  корректное хранение денег
   currency    String? @default("EUR") //  мультивалютность
+
+  category    ArtworkCategory?
 
   isPublished Boolean   @default(false) // черновики и управление видимостью
   publishedAt DateTime? // сортировка и история публикации

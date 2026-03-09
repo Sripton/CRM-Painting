@@ -2,12 +2,11 @@ import express from "express";
 import "dotenv/config";
 import cors from "cors";
 import morgan from "morgan";
-import { prisma } from "./db/prisma.js";
+import { prisma } from "./db/prisma/prisma.js";
 import cookieParser from "cookie-parser";
-import authAPIRouter from "./api/authRouter.js";
-import artWorkImageAPIRouter from "./api/artworksImagesRouter.js";
-import { error } from "console";
-
+import authAPIRouter from "./api/auth/authRouter.js";
+import artWorkImageAPIRouter from "./api/admin/artworksImagesRouter.js";
+import adminArtworksRouter from "./api/admin/adminArtworksRouter.js";
 const app = express();
 const PORT = process.env.PORT;
 
@@ -24,7 +23,8 @@ app.use(
 
 // роутеры
 app.use("/api/auth", authAPIRouter);
-app.use("/api", artWorkImageAPIRouter);
+app.use("/api/admin", artWorkImageAPIRouter);
+app.use("/api/admin", adminArtworksRouter);
 
 app.listen(PORT, () => {
   console.log(`Server start on ${PORT} PORT`);
