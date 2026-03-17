@@ -71,6 +71,10 @@ export default function AdminArtworkEditPage() {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
 
+    // состояние для удаления image 
+    const [deleting, setDeleting] = useState(false);
+
+
     // Вспомонательная функция преобразования string значений в number
     function toNullableNumber(value: string) {
         // если значение пустое возвращаем undefined
@@ -173,7 +177,25 @@ export default function AdminArtworkEditPage() {
         }
     }
 
+    // функция для удаления 
+    async function handleDeleteArtwork() {
+        if (!id) return;
 
+        try {
+            setDeleting(true);
+            setError("");
+            setSuccess("");
+
+            // маршрут удаления картины
+            await api.delete(`/api/admin/artworks/${id}`);
+            navigate("/admin");
+        } catch (error) {
+            const err = error as AxiosError<{ message?: string }>;
+            setError(err.response?.data?.message || "Ошибка удаления картины");
+        } finally {
+            setDeleting(false);
+        }
+    }
     return (
         <Box sx={{
             minHeight: "100vh",
@@ -426,6 +448,16 @@ export default function AdminArtworkEditPage() {
                                 >
                                     Назад
                                 </Button>
+
+                                <Button
+                                    type='button'
+                                    color='error'
+                                    variant="outlined"
+                                    disabled={deleting}
+                                    onClick={handleDeleteArtwork}
+                                >
+                                    {deleting ? "Удаление..." : "Удалить картину"}
+                                </Button>
                             </Stack>
 
                         </Stack>
@@ -442,7 +474,6 @@ export default function AdminArtworkEditPage() {
                             {uploading ? "Текущее изображение" : "Загрузить изображение"}
                             <input hidden type='file' accept="image/*" onChange={handleUpload} />
                         </Button>
-
 
                         <Stack spacing={2} sx={{ mt: 3 }}>
                             {!artwork?.image && (

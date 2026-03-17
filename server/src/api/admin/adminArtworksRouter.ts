@@ -3,6 +3,7 @@ import { requireAdmin, requireAuth } from "../../middlewares/authSecurity.js";
 import { prisma } from "../../db/prisma/prisma.js";
 import { Prisma } from "@prisma/client";
 import { validate as isUUID } from "uuid";
+import { deleteFromS3 } from "../../services/s3.js";
 const router = Router();
 
 // Защита middleware
@@ -156,6 +157,7 @@ router.patch("/artworks/:id", async (req: Request, res: Response) => {
     priceCents,
     currency,
     category,
+    isPublished,
   } = req.body; // данные для редактирования
   try {
     // проверка id
@@ -215,6 +217,13 @@ router.patch("/artworks/:id", async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Некорректная категория" });
     }
 
+    // валидация  isPublished
+    if (isPublished !== undefined && typeof isPublished !== "boolean") {
+      return res
+        .status(400)
+        .json({ message: "isPublished должен быть boolean" });
+    }
+
     // функция преобразования числовых полей в значение number
     function toOptionalInt(value: unknown) {
       // если value не является числом
@@ -262,6 +271,8 @@ router.patch("/artworks/:id", async (req: Request, res: Response) => {
     if (parsedWidthCm !== undefined) data.widthCm = parsedWidthCm;
     if (parsedHeightCm !== undefined) data.heightCm = parsedHeightCm;
     if (parsedPriceCents !== undefined) data.priceCents = parsedPriceCents;
+    if (category !== undefined) data.category = category;
+    if (isPublished !== undefined) data.isPublished = isPublished;
 
     // если ничего не передали
     if (Object.keys(data).length === 0) {
@@ -287,6 +298,41 @@ router.patch("/artworks/:id", async (req: Request, res: Response) => {
       }
     }
     console.log(error);
+    return res.status(500).json({ message: "Ошибка сервера" });
+  }
+});
+
+// маршрут удаления картины
+router.delete("/artworks/:id", async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  try {
+    // валидность id
+    if (!isUUID(id)) {
+      return res.status(400).json({ message: "Некорректный id" });
+    }
+
+    // ищем картину в базе данных
+    const artwork = await prisma.artwork.findUnique({
+      where: { id },
+      include: { image: true },
+    });
+
+    // если не найден
+    if (!artwork) {
+      return res.status(404).json({ message: "artwork не найден" });
+    }
+
+    // если image сушествует удаляем из minIo
+    if (artwork.image) {
+      await deleteFromS3({ key: artwork?.image?.key });
+    }
+
+    // удалем саму картину
+    await prisma.artwork.delete({ where: { id } });
+
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error("DELETE /artworks/:id error:", error);
     return res.status(500).json({ message: "Ошибка сервера" });
   }
 });

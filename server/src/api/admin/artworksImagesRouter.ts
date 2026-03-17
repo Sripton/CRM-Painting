@@ -114,79 +114,35 @@ router.post(
 );
 
 // маршрут для удаления  изображения + файла из MinIO
-router.delete("/images/:id", async (req: Request, res: Response) => {
-  try {
-    const imageId = req.params.id as string;
+// router.delete("/images/:id", async (req: Request, res: Response) => {
+//   try {
+//     const imageId = req.params.id as string;
 
-    // проверка валидноcти id
-    if (!isUUID(imageId)) {
-      return res.status(400).json({ message: "Некорректный id изображения" });
-    }
+//     // проверка валидноcти id
+//     if (!isUUID(imageId)) {
+//       return res.status(400).json({ message: "Некорректный id изображения" });
+//     }
 
-    // находим картинку
-    const image = await prisma.image.findUnique({
-      where: { id: imageId },
-      select: { id: true, key: true, artworkId: true },
-    });
+//     // находим картинку
+//     const image = await prisma.image.findUnique({
+//       where: { id: imageId },
+//       select: { id: true, key: true },
+//     });
 
-    // если поиск не успешный
-    if (!image) return res.status(404).json({ message: "Image не найден" });
+//     // если поиск не успешный
+//     if (!image) return res.status(404).json({ message: "Image не найден" });
 
-    // если это cover — сбросываем coverImageId
-    if (image.artworkId) {
-      const art = await prisma.artwork.findUnique({
-        where: { id: image.artworkId },
-        select: { id: true, coverImageId: true },
-      });
+//     // удалить объект из MinIO/S3
+//     await deleteFromS3({ key: image.key });
+//     // удалить запись из БД
+//     await prisma.image.delete({ where: { id: image.id } });
 
-      // изменяем coverImageId на null
-      if (art?.coverImageId === image.id) {
-        await prisma.artwork.update({
-          where: { id: art.id },
-          data: { coverImageId: null },
-        });
-      }
-    }
-    // удалить объект из MinIO/S3
-    await deleteFromS3({ key: image.key });
-
-    // удалить запись из БД
-    await prisma.image.delete({ where: { id: image.id } });
-
-    // если у artwork теперь нет cover — поставить первую оставшуюся
-    if (image.artworkId) {
-      const art2 = await prisma.artwork.findUnique({
-        where: { id: image.artworkId },
-        select: { id: true, coverImageId: true },
-      });
-
-      // если artwork  И у него нету поля !art2.coverImageId => null
-      if (art2 && !art2.coverImageId) {
-        // ищем первый попавшиее изображение
-        const first = await prisma.image.findFirst({
-          where: { artworkId: art2.id },
-          orderBy: { createdAt: "asc" },
-          select: { id: true },
-        });
-
-        // если first = true
-        if (first) {
-          await prisma.artwork.update({
-            where: { id: art2.id },
-            data: {
-              coverImageId: first.id,
-            },
-          });
-        }
-      }
-    }
-
-    // возвращаем положительный ответ
-    return res.json({ ok: true });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Ошибка сервера" });
-  }
-});
+//     // возвращаем положительный ответ
+//     return res.json({ ok: true });
+//   } catch (error) {
+//     console.log(error);
+//     return res.status(500).json({ message: "Ошибка сервера" });
+//   }
+// });
 
 export default router;

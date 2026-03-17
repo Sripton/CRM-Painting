@@ -39,8 +39,9 @@ export default function AdminArtworksPage() {
     // для показа сообщения об ошибке, если запрос не удался.
     const [error, setError] = useState<string | null>(null);
 
+    // состояние для пагинации 
     const [page, setPage] = useState(1);
-    const ITEMS_PER_PAGE = 6; // ко-во картин которые показываем 
+    const ITEMS_PER_PAGE = 4; // ко-во картин которые показываем 
 
     const navigate = useNavigate();
 
@@ -70,14 +71,6 @@ export default function AdminArtworksPage() {
         setPage(value);
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
-
-    const handleDelete = (id: string) => {
-        // TODO: реализация удаления картины
-        // Можно позже добавить диалог подтверждения и запрос к API
-        console.log("Удалить картину", id);
-
-    };
-    console.log("artwork", artwork);
 
     if (loading) {
         return (
@@ -330,19 +323,29 @@ export default function AdminArtworksPage() {
                                     >
                                         Редактировать
                                     </Button>
-                                    <Button
-                                        variant="text"
+                                    {/* <Button
+                                        variant="outlined"
                                         color="error"
                                         size="small"
                                         sx={{
                                             textTransform: "none",
+                                            borderRadius: 999,
+                                            borderColor:
+                                                "rgba(225, 24, 58, 0.7)",
+                                            color: "#e73488",
                                             fontFamily:
                                                 '"Source Sans 3", "Helvetica Neue", Arial, sans-serif',
+                                            "&:hover": {
+                                                borderColor:
+                                                    "rgba(214, 47, 111, 0.95)",
+                                                background:
+                                                    "rgba(255, 248, 241, 0.7)",
+                                            },
                                         }}
                                         onClick={() => handleDelete(art.id)}
                                     >
                                         Удалить картину
-                                    </Button>
+                                    </Button> */}
                                 </Stack>
                             </Card>
                         </Grid>
