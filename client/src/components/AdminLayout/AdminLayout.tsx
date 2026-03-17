@@ -95,7 +95,7 @@ export default function AdminLayout() {
               }}
               onClick={() => handleNav("/admin")}
             >
-              Главная
+              Картины
             </Button>
             <Button
               color="inherit"
@@ -104,31 +104,9 @@ export default function AdminLayout() {
                 color: "#4f3626",
                 "&:hover": { bgcolor: "rgba(178, 107, 58, 0.06)" },
               }}
-              onClick={() => handleNav("/admin/orders")}
+              onClick={() => handleNav("/admin/artworks/create")}
             >
-              Заказы
-            </Button>
-            <Button
-              color="inherit"
-              sx={{
-                textTransform: "none",
-                color: "#4f3626",
-                "&:hover": { bgcolor: "rgba(178, 107, 58, 0.06)" },
-              }}
-              onClick={() => handleNav("/admin/clients")}
-            >
-              Клиенты
-            </Button>
-            <Button
-              color="inherit"
-              sx={{
-                textTransform: "none",
-                color: "#4f3626",
-                "&:hover": { bgcolor: "rgba(178, 107, 58, 0.06)" },
-              }}
-              onClick={() => handleNav("/admin/settings")}
-            >
-              Настройки
+              Создать картину
             </Button>
           </Box>
 
@@ -167,6 +145,7 @@ export default function AdminLayout() {
         }}
       >
         {/* Делаем AdminDashboard.tsx Layout компонентом 
+        В Outlet должны рендериться страницы.
         Если есть Outlet, компонент говорит:
         я не страница с контентом, я оболочка, внутри которой будут другие страницы*/}
         <Outlet />

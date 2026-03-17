@@ -4,7 +4,7 @@ import bcrypt from "bcrypt"; // для сравнения хэшей парол�
 import jwt from "jsonwebtoken"; // для создания и проверки JWT
 import ms, { type StringValue } from "ms"; // для вычисления срока жизни токена в базе
 import crypto from "crypto"; // хэшируем refresh-токен перед сохранением в БД
-
+import { Prisma } from "@prisma/client";
 const router = Router();
 
 // Маршрут для  создания пользовтаеля/admin
@@ -60,7 +60,11 @@ router.post("/setup", async (req: Request, res: Response) => {
 
     return res.status(201).json({ admin });
   } catch (error) {
-    console.error(error);
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        return res.status(400).json({ message: "email уже существует" });
+      }
+    }
     return res.status(500).json({ message: "Ошибка сервера" });
   }
 });
@@ -128,7 +132,7 @@ router.post("/login", async (req: Request, res: Response) => {
 
     // если пользователь  не нашелся
     if (!user) {
-      return res.status(401).json({ message: "Неверные учетные данные" });
+     return res.status(401).json({ message: "Неверные учетные данные" });
     }
 
     // сопоставляем пароль для
@@ -136,7 +140,7 @@ router.post("/login", async (req: Request, res: Response) => {
 
     // если пароль не верен
     if (!ok) {
-      return res.status(401).json({ message: "Введен неверный пароль" });
+      return res.status(401).json({ message: "Неверные учетные данные" });
     }
 
     // запрет входа не-админам
@@ -244,7 +248,7 @@ router.post("/refresh", async (req: Request, res: Response) => {
   }
 });
 
-router.get("/logout", async (req: Request, res: Response) => {
+router.post("/logout", async (req: Request, res: Response) => {
   const token = (req.cookies?.refresh_token as string) || undefined;
   if (token) {
     await prisma.refreshToken.updateMany({

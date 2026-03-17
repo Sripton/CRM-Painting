@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // функция выхода 
   async function logout() {
     try {
-      await api.get("/api/auth/logout")
+      await api.post("/api/auth/logout")
     } catch (error) {
       console.log(error)
     }

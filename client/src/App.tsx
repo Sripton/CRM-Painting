@@ -5,14 +5,12 @@ import AdminRoute from "./routes/AdminRoute";
 // Компоненты
 import Home from "./components/Home";
 import Login from "./components/Login";
-import AdminDashboard from "./components/AdminLayout";
-
-import { useAuth } from "./components/Context/Auth/AuthContext"
-
+import AdminLayout from "./components/AdminLayout";
+import AdminArtworksPage from "./components/admin/AdminArtworksPage";
+import AdminArtworkCreatePage from "./components/admin/AdminArtworkCreatePage";
+import AdminArtworkEditPage from "./components/admin/AdminArtworkEditPage";
 
 export default function App() {
-  const { user } = useAuth();
-  console.log("user", user)
 
   return (
     <>
@@ -21,13 +19,19 @@ export default function App() {
 
           <Route path="/" element={<Home />} />
           <Route path="/admin/login" element={<Login />} />
+
           {/* защищённая админка */}
           <Route path="/admin" element={
             <AdminRoute>
-              <AdminDashboard />
+              <AdminLayout />
             </AdminRoute>
 
-          } />
+          }>
+            {/* по умолчанию */}
+            <Route index element={<AdminArtworksPage />} />
+            <Route path="artworks/create" element={<AdminArtworkCreatePage />} />
+            <Route path="artworks/:id" element={<AdminArtworkEditPage />} />
+          </Route>
         </Routes>
       </BrowserRouter>
     </>

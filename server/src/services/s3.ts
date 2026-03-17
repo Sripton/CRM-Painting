@@ -3,6 +3,7 @@ import {
   PutObjectCommand, // содержатся параметры запроса (имя корзины, ключ объекта, тело, метаданные и т.п.).
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
+import crypto from "crypto";
 
 // вспомогательная функция  для безопасного чтения переменных окружения
 function requireEnv(name: string) {
@@ -71,7 +72,7 @@ export function makeImageKey(
 ) {
   const safeName = originalName || "file.bin";
   const ext = (safeName.split(".").pop() || "bin").toLowerCase();
-  return `artworks/${artworkId}/${crypto.randomUUID()}.${ext}`; // строковый ключ, который можно передать в uploadBuffer
+  return `${artworkId}/${crypto.randomUUID()}.${ext}`; // строковый ключ, который можно передать в uploadBuffer
 }
 
 // функцию удаления из S3/MinIO
