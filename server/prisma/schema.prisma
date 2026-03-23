@@ -33,27 +33,54 @@ model RefreshToken {
   @@index([userId])
 }
 
+enum ArtworkGroup {
+  PAINTING_AND_WALL_ART // Картины-живопись, Акварель, Стено-роспись, Рельеф
+  GRAPHICS_AND_PRINTS // Литографии, Рисунки, Станковая-графика, Уникальная графика
+  DESIGN_AND_ADVERTISING // Фирменные стили, Плакаты, Проекты, Реклама, Сувениры
+  SUBJECTS_AND_THEMES // Портреты, Архитектура, Сюжеты, Пейзажи
+}
+
 enum ArtworkCategory {
   PAINTING
   WATERCOLOR
   WALL_PAINTING
+  RELIEF
+
+  LITHOGRAPHY
+  DRAWING
+  EASEL_GRAPHICS
+  UNIQUE_GRAPHICS
+
+  BRAND_IDENTITY
+  POSTER
+  PROJECT
+  ADVERTISING
+  SOUVENIR
+
+  PORTRAIT
+  ARCHITECTURE
+  SUBJECT
+  LANDSCAPE
 }
 
 model Artwork {
-  id          String          @id @default(uuid())
+  id          String  @id @default(uuid())
   title       String
-  slug        String          @unique // SEO и красивые URL
+  slug        String  @unique // SEO и красивые URL
   description String?
   year        Int?
   widthCm     Int?
   heightCm    Int?
   materials   String?
   priceCents  Int? //  корректное хранение денег
-  currency    String?         @default("EUR") //  мультивалютность
-  category    ArtworkCategory
-  isPublished Boolean         @default(false) // черновики и управление видимостью
+  currency    String? @default("EUR") //  мультивалютность
 
+  artworkGroup    ArtworkGroup?
+  category ArtworkCategory
+
+  isPublished Boolean @default(false) // черновики и управление видимостью
   image Image?
+
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

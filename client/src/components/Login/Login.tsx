@@ -31,20 +31,19 @@ export default function Login() {
         e.preventDefault();
         setError("");
         setIsSubmitting(true)
-
         try {
             const res = await api.post("/api/auth/login", {
                 email, password
             })
-
             //сохраняем в context
             setAuth(res.data.accessToken, res.data.user);
 
             // redirect
             navigate('/admin')
-
         } catch (error: any) {
             setError(error?.response?.data?.message || "Ошибка входа");
+
+        } finally {
             setIsSubmitting(false)
         }
     }

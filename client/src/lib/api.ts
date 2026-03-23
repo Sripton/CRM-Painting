@@ -2,7 +2,7 @@ import axios from "axios";
 import type { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { getAccessToken, setAccessToken } from "./tokenStorage";
 
-// Создаём отдельный экземпляр axios. в этот api мы добавляем interceptor
+// Создаём отдельный экземпляр axios. в  api  добавляем interceptor
 // api.get(...)
 // api.post(...)
 export const api = axios.create({
@@ -44,6 +44,7 @@ function processQueue(error: unknown, token: string | null = null) {
     }
   });
 
+  // После обработки очередь очищается (failedQueue = []).
   failedQueue = [];
 }
 
@@ -56,13 +57,27 @@ api.interceptors.response.use(
       | (InternalAxiosRequestConfig & { _retry?: boolean })
       | undefined;
 
-    // Если конфигурации нет (редкий случай) — пробрасываем ошибку дальше
+    // Если конфигурации нет (редкий случай) — пробрасываем ошибку
     if (!originalRequest) {
       return Promise.reject(error);
     }
 
     // Если статус не 401 — не наша ошибка, отклоняем
     if (error.response?.status !== 401) {
+      return Promise.reject(error);
+    }
+    // исключение для auth-маршрутов, чтобы interceptor не пытался refresh-ить refresh/login/logout запросы.
+    const requestUrl = originalRequest.url || "";
+
+    if (
+      // если пользователь вышел из системы. интерцептор попытается обработать эту 401 и снова отправить запрос на обновление токена, возникнет бесконечный цикл
+      // гарантируем, что при ошибке обновления токена интерцептор сразу отклонит запрос, и приложение сможет корректно обработать ситуацию (например, разлогинить пользователя)
+      requestUrl.includes("/api/auth/refresh") ||
+      // Если он почему-то вернёт 401 (например, из-за неверных учётных данных), не нужно пытаться обновлять токен — логин должен завершиться ошибкой
+      requestUrl.includes("/api/auth/login") ||
+      // выполняется с токеном, но его неудача (например, токен уже недействителен) не должна запускать цикл обновления. Пользователь уже выходит из системы, и повторять запрос на обновление токена бессмысленно.
+      requestUrl.includes("/api/auth/logout")
+    ) {
       return Promise.reject(error);
     }
 
@@ -75,6 +90,7 @@ api.interceptors.response.use(
     originalRequest._retry = true;
 
     // Если в данный момент уже выполняется обновление токена
+    // Если isRefreshing === true, то запрос не инициирует обновление, а попадает в очередь через new Promise(...). Обработчики resolve и reject сохраняются в failedQueue.
     if (isRefreshing) {
       // Возвращаем новый промис, который будет добавлен в очередь
       return new Promise((resolve, reject) => {
@@ -106,7 +122,9 @@ api.interceptors.response.use(
 
       // Сохраняем новый токен в глобальном состоянии (например, в сторе)
       setAccessToken(newToken);
+
       // Обрабатываем очередь ожидающих запросов — передаём им новый токен
+      // Вызывается после того, как запрос на обновление токена завершился (успешно или с ошибкой).
       processQueue(null, newToken);
 
       // Устанавливаем новый токен в заголовок исходного запроса

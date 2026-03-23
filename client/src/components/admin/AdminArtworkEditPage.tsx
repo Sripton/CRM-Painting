@@ -18,7 +18,21 @@ import { AxiosError } from "axios"; // ts не понимает error.responce
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../lib/api';
 
-type ArtworkCategory = "PAINTING" | "WATERCOLOR" | "WALL_PAINTING";
+// Тип категории картин
+type ArtworkCategory =
+    "PAINTING" | "WATERCOLOR" | "WALL_PAINTING" | "RELIEF" |
+    "LITHOGRAPHY" | "DRAWING" | "EASEL_GRAPHICS" | "UNIQUE_GRAPHICS" |
+    "BRAND_IDENTITY" | "POSTER" | "PROJECT" | "ADVERTISING" | "SOUVENIR" |
+    "PORTRAIT" | "ARCHITECTURE" | "SUBJECT" | "LANDSCAPE"
+
+
+// Тип подгруппа картин
+type ArtworkGroup =
+    | "PAINTING_AND_WALL_ART"
+    | "GRAPHICS_AND_PRINTS"
+    | "DESIGN_AND_ADVERTISING"
+    | "SUBJECTS_AND_THEMES";
+
 
 // тип Image
 type ImageItem = {
@@ -42,9 +56,9 @@ type Artwork = {
     materials: string | null;
     priceCents: number | null;
     currency: string | null;
+    artworkGroup: ArtworkGroup | null;
     category: ArtworkCategory;
     isPublished: boolean;
-    coverImageId: string | null;
     image: ImageItem | null;
 };
 
@@ -63,6 +77,7 @@ export default function AdminArtworkEditPage() {
     const [priceCents, setPriceCents] = useState("");
     const [currency, setCurrency] = useState("EUR");
     const [category, setCategory] = useState<ArtworkCategory>("PAINTING");
+    const [artworkGroup, setArtworkGroup] = useState<ArtworkGroup>("PAINTING_AND_WALL_ART");
     const [isPublished, setIsPublished] = useState(false);
 
     const [loading, setLoading] = useState(true);
@@ -119,6 +134,9 @@ export default function AdminArtworkEditPage() {
     async function handleSave(e: React.FormEvent) {
         // убираем стандарное поведение 
         e.preventDefault();
+        setSaving(true);  // Блокировка повторных отправок
+        setError("");
+        setSuccess("");
         try {
             const payload = {
                 title: title.trim(),
@@ -130,7 +148,8 @@ export default function AdminArtworkEditPage() {
                 materials: materials.trim(),
                 priceCents: toNullableNumber(priceCents),
                 currency: currency.trim(),
-                category,
+                artworkGroup, // к какой группе относится картина
+                category, // к какой категрии относится картина
                 isPublished // в patch не нужно менять 
             }
             const res = await api.patch(`/api/admin/artworks/${id}`, payload);
@@ -174,6 +193,8 @@ export default function AdminArtworkEditPage() {
         } catch (error) {
             const err = error as AxiosError<{ message?: string }>;
             setError(err.response?.data?.message || "Ошибка загрузки изображения");
+        } finally {
+            setUploading(false);
         }
     }
 
@@ -352,19 +373,39 @@ export default function AdminArtworkEditPage() {
                                     },
                                 }}
                             />
+                            {/* Выбор к какой группе будет относиться картина */}
+                            <FormControl fullWidth>
+                                <InputLabel id="artwork-group-label">Группа</InputLabel>
+                                <Select
+                                    labelId="artwork-group-label"
+                                    label="Группа"
+                                    value={artworkGroup}
+                                    onChange={(e) => setArtworkGroup(e.target.value as ArtworkGroup)}
+                                >
+                                    <MenuItem value="PAINTING_AND_WALL_ART">PAINTING_AND_WALL_ART</MenuItem>
+                                    <MenuItem value="GRAPHICS_AND_PRINTS">GRAPHICS_AND_PRINTS</MenuItem>
+                                    <MenuItem value="DESIGN_AND_ADVERTISING">DESIGN_AND_ADVERTISING</MenuItem>
+                                    <MenuItem value="SUBJECTS_AND_THEMES">SUBJECTS_AND_THEMES</MenuItem>
+                                </Select>
+                            </FormControl>
+
+                            {/* Выбор к какой категории будет относиться картина */}
                             <FormControl fullWidth>
                                 <InputLabel id="category-label">Категория</InputLabel>
                                 <Select
                                     labelId="category-label"
                                     label="Категория"
                                     value={category}
-                                    onChange={(e) => setCategory(e.target.value)}
+                                    onChange={(e) => setCategory(e.target.value as ArtworkCategory)}
                                 >
                                     <MenuItem value="PAINTING">PAINTING</MenuItem>
                                     <MenuItem value="WATERCOLOR">WATERCOLOR</MenuItem>
                                     <MenuItem value="WALL_PAINTING">WALL_PAINTING</MenuItem>
+
                                 </Select>
                             </FormControl>
+
+
                             <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
                                 <TextField
                                     label="Год"
@@ -394,7 +435,6 @@ export default function AdminArtworkEditPage() {
                                 onChange={(e) => setMaterials(e.target.value)}
                                 fullWidth
                             />
-
                             <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
                                 <TextField
                                     label="Цена в центах"
@@ -414,30 +454,33 @@ export default function AdminArtworkEditPage() {
                                 control={
                                     <Checkbox
                                         checked={isPublished}
+                                        onChange={(e) => setIsPublished(e.target.checked)}
                                     />
                                 }
                                 label="Опубликовано"
                             />
                             <Stack direction="row" spacing={2}>
-                                <Button type="submit" variant="contained" disabled={saving} sx={{
-                                    alignSelf: "flex-start",
-                                    mt: 1,
-                                    textTransform: "none",
-                                    fontWeight: 600,
-                                    borderRadius: 999,
-                                    px: 4,
-                                    py: 1.1,
-                                    background:
-                                        "linear-gradient(135deg, #b86b3e 0%, #c67b4e 50%, #a85b33 100%)",
-                                    boxShadow:
-                                        "0 16px 30px rgba(93, 55, 33, 0.3), 0 0 0 1px rgba(140, 88, 58, 0.4)",
-                                    "&:hover": {
+                                <Button type="submit" variant="contained"
+                                    disabled={saving} // блокируем кнопку, пока saving = true, то есть во время выполнения запроса на сервер
+                                    sx={{
+                                        alignSelf: "flex-start",
+                                        mt: 1,
+                                        textTransform: "none",
+                                        fontWeight: 600,
+                                        borderRadius: 999,
+                                        px: 4,
+                                        py: 1.1,
                                         background:
-                                            "linear-gradient(135deg, #d0834f 0%, #c67447 50%, #9e512c 100%)",
+                                            "linear-gradient(135deg, #b86b3e 0%, #c67b4e 50%, #a85b33 100%)",
                                         boxShadow:
-                                            "0 18px 36px rgba(93, 55, 33, 0.38), 0 0 0 1px rgba(140, 88, 58, 0.55)",
-                                    },
-                                }}>
+                                            "0 16px 30px rgba(93, 55, 33, 0.3), 0 0 0 1px rgba(140, 88, 58, 0.4)",
+                                        "&:hover": {
+                                            background:
+                                                "linear-gradient(135deg, #d0834f 0%, #c67447 50%, #9e512c 100%)",
+                                            boxShadow:
+                                                "0 18px 36px rgba(93, 55, 33, 0.38), 0 0 0 1px rgba(140, 88, 58, 0.55)",
+                                        },
+                                    }}>
                                     {saving ? "Сохранение..." : "Сохранить"}
                                 </Button>
 
@@ -470,7 +513,8 @@ export default function AdminArtworkEditPage() {
 
                         <Button variant="outlined"
                             component="label"
-                            disabled={uploading}>
+                            disabled={uploading} // блокировака кнопки
+                        >
                             {uploading ? "Текущее изображение" : "Загрузить изображение"}
                             <input hidden type='file' accept="image/*" onChange={handleUpload} />
                         </Button>

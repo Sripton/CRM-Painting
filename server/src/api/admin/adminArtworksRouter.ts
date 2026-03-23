@@ -1,9 +1,10 @@
 import { Request, Response, Router } from "express";
 import { requireAdmin, requireAuth } from "../../middlewares/authSecurity.js";
 import { prisma } from "../../db/prisma/prisma.js";
-import { Prisma } from "@prisma/client";
+import { Prisma, ArtworkCategory, ArtworkGroup } from "@prisma/client";
 import { validate as isUUID } from "uuid";
 import { deleteFromS3 } from "../../services/s3.js";
+
 const router = Router();
 
 // Защита middleware
@@ -12,20 +13,65 @@ router.use(
   requireAdmin,
 ); // потом роль
 
-// GET /api/admin/artworks
+// функция на проверку, что данные это число и оно не отрицательное
+function isNonNegativeInteger(value: unknown) {
+  return Number.isInteger(value) && Number(value) >= 0;
+}
+
+// валидация seo
+function isValidSlug(value: string) {
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
+}
+
+// GET /api/admin/artwork
+// добрабатываю запрос что бы работал и в качестве поиска по title
 router.get("/artworks", async (req: Request, res: Response) => {
   try {
+    // если есть данные для посика
+    const search =
+      typeof req.query.search === "string" ? req.query.search.trim() : "";
+
+    // если нужны данные для статуса публикации. получаем сначала status
+    const status =
+      typeof req.query.status === "string" ? req.query.status : "all";
+
     // список картин
     const artworks = await prisma.artwork.findMany({
+      // если поиск был запрошен
+      // where: search
+      //   ? {
+      //       title: {
+      //         contains: search,
+      //         mode: "insensitive",
+      //       },
+      //     }
+      //   : // если поиск не дал результатов
+      //     undefined,
+      // orderBy: { createdAt: "desc" },
+
+      where: {
+        ...(search
+          ? {
+              title: {
+                contains: search,
+                mode: "insensitive",
+              },
+            }
+          : {}),
+        ...(status === "published"
+          ? { isPublished: true }
+          : status === "draft"
+            ? { isPublished: false }
+            : {}),
+      },
       orderBy: { createdAt: "desc" },
-      // include: {
-      //   coverImage: true,
-      // },
+
       // API будет возвращать меньше данных: быстрее, чище, безопаснее
       select: {
         id: true,
         title: true,
         slug: true,
+        artworkGroup: true,
         category: true,
         isPublished: true,
         createdAt: true,
@@ -38,6 +84,7 @@ router.get("/artworks", async (req: Request, res: Response) => {
         },
       },
     });
+
     return res.json(artworks);
   } catch {
     return res.status(500).json({ message: "Ошибка сервера" });
@@ -48,17 +95,18 @@ router.get("/artworks", async (req: Request, res: Response) => {
 router.post("/artworks", async (req: Request, res: Response) => {
   try {
     const {
-      title, // название
-      slug, // это строка для URL. безопасное название для URL
-      description, // описание
-      year, // год
-      widthCm, // ширина
-      heightCm, // высота
-      materials, // материал
-      priceCents, // цена
-      currency, // валюта
-      category, // категория
-      isPublished, // опубликован/неопубликован
+      title,
+      slug,
+      description,
+      year,
+      widthCm,
+      heightCm,
+      materials,
+      priceCents,
+      currency,
+      artworkGroup,
+      category,
+      isPublished,
     } = req.body;
 
     // нормализация title/slug перед созданием. не попадут пустые строки
@@ -66,16 +114,73 @@ router.post("/artworks", async (req: Request, res: Response) => {
     const cleanTitle = typeof title === "string" ? title.trim() : "";
     const cleanSlug = typeof slug === "string" ? slug.trim() : "";
 
-    // если не указали
-    if (!cleanTitle || !cleanSlug) {
-      return res.status(400).json({ message: "title и slug обязательны" });
+    // если не указан title
+    if (!cleanTitle || cleanTitle.length < 2) {
+      return res
+        .status(400)
+        .json({ message: "title должен содержать минимум 2 символа" });
     }
-    // нормализация категорий. уточнить у заказчика ???????????????
-    const allowedCategories = ["PAINTING", "WATERCOLOR", "WALL_PAINTING"];
 
-    // проверка
-    if (category && !allowedCategories.includes(category)) {
-      return res.status(400).json({ message: "Такой категория нет" });
+    // если не указан slug
+    if (!cleanSlug || !isValidSlug(cleanSlug)) {
+      return res.status(400).json({
+        message: "slug должен быть в формате: latin letters, numbers, hyphen",
+      });
+    }
+
+    if (year !== undefined && year !== null && !isNonNegativeInteger(year)) {
+      return res
+        .status(400)
+        .json({ message: "year должен быть неотрицательным целым числом" });
+    }
+
+    if (
+      widthCm !== undefined &&
+      widthCm !== null &&
+      !isNonNegativeInteger(widthCm)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "widthCm должен быть неотрицательным целым числом" });
+    }
+
+    if (
+      heightCm !== undefined &&
+      heightCm !== null &&
+      !isNonNegativeInteger(heightCm)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "heightCm должен быть неотрицательным целым числом" });
+    }
+
+    if (
+      priceCents !== undefined &&
+      priceCents !== null &&
+      !isNonNegativeInteger(priceCents)
+    ) {
+      return res.status(400).json({
+        message: "priceCents должен быть неотрицательным целым числом",
+      });
+    }
+
+    // проверка если клиент передаёт эти поля, то их значения обязательно должны быть допустимыми вариантами, определёнными в Prisma-схеме
+    // Проверка category
+    if (
+      category !== undefined &&
+      category !== null &&
+      !Object.values(ArtworkCategory).includes(category as ArtworkCategory)
+    ) {
+      return res.status(400).json({ message: "Такой категории нет" });
+    }
+
+    // Проверка artworkGroup
+    if (
+      artworkGroup !== undefined &&
+      artworkGroup !== null &&
+      !Object.values(ArtworkGroup).includes(artworkGroup as ArtworkGroup)
+    ) {
+      return res.status(400).json({ message: "Такой группы нет" });
     }
 
     // создаем artwork
@@ -90,7 +195,8 @@ router.post("/artworks", async (req: Request, res: Response) => {
         materials,
         priceCents,
         currency,
-        category,
+        artworkGroup: artworkGroup || "PAINTING_AND_WALL_ART",
+        category: category || "PAINTING",
         isPublished,
       },
     });
@@ -156,9 +262,10 @@ router.patch("/artworks/:id", async (req: Request, res: Response) => {
     materials,
     priceCents,
     currency,
+    artworkGroup,
     category,
     isPublished,
-  } = req.body; // данные для редактирования
+  } = req.body;
   try {
     // проверка id
     if (!isUUID(id)) {
@@ -186,35 +293,35 @@ router.patch("/artworks/:id", async (req: Request, res: Response) => {
       typeof currency === "string" ? currency.trim() : undefined;
 
     // были ли поля переданы в запросе для наименования
-    if (
-      title !== undefined &&
-      // если после дулаения пробелов оказалось пустой строкой
-      !cleanTitle // становится истинным, если после удаления пробелов строка оказалась пустой
-    ) {
-      return res.status(400).json({ message: "title не может быть пустым" });
+    if (title !== undefined && (!cleanTitle || cleanTitle.length < 2)) {
+      return res
+        .status(400)
+        .json({ message: "title должен содержать минимум 2 символа" });
     }
 
     // были ли поля переданы в запросе для url
-    if (
-      slug !== undefined &&
-      !cleanSlug // становится истинным, если после удаления пробелов строка оказалась пустой
-    ) {
-      return res.status(400).json({ message: "slug не может быть пустым" });
+    if (slug !== undefined && (!cleanSlug || !isValidSlug(cleanSlug))) {
+      return res.status(400).json({
+        message: "slug должен быть в формате: latin letters, numbers, hyphen",
+      });
     }
-    // Выбор категории
-    const allowedCategories = [
-      "PAINTING",
-      "WATERCOLOR",
-      "WALL_PAINTING",
-    ] as const;
 
-    //если не соответствует категория
+    // Проверка category
     if (
       category !== undefined &&
       (typeof category !== "string" ||
-        !allowedCategories.includes(category as any))
+        !Object.values(ArtworkCategory).includes(category as ArtworkCategory))
     ) {
       return res.status(400).json({ message: "Некорректная категория" });
+    }
+
+    // Проверка artworkGroup
+    if (
+      artworkGroup !== undefined &&
+      (typeof artworkGroup !== "string" ||
+        !Object.values(ArtworkGroup).includes(artworkGroup as ArtworkGroup))
+    ) {
+      return res.status(400).json({ message: "Некорректная группа" });
     }
 
     // валидация  isPublished
@@ -226,14 +333,15 @@ router.patch("/artworks/:id", async (req: Request, res: Response) => {
 
     // функция преобразования числовых полей в значение number
     function toOptionalInt(value: unknown) {
-      // если value не является числом
-      if (value === undefined || value === null || value === "") return null;
-      // преобразование value в число
+      if (value === undefined) return undefined;
+      if (value === null || value === "") return null;
+
       const num = Number(value);
-      //дополнительная проверка на integer
+
       if (!Number.isInteger(num)) {
         throw new Error("Не допустимое значение int");
       }
+
       return num;
     }
 
@@ -244,21 +352,58 @@ router.patch("/artworks/:id", async (req: Request, res: Response) => {
     let parsedPriceCents: number | null | undefined;
 
     try {
-      parsedYear = year !== undefined ? toOptionalInt(year) : undefined;
-      parsedWidthCm =
-        widthCm !== undefined ? toOptionalInt(widthCm) : undefined;
-      parsedHeightCm =
-        heightCm !== undefined ? toOptionalInt(heightCm) : undefined;
-      parsedPriceCents =
-        priceCents !== undefined ? toOptionalInt(priceCents) : undefined;
+      parsedYear = toOptionalInt(year);
+      parsedWidthCm = toOptionalInt(widthCm);
+      parsedHeightCm = toOptionalInt(heightCm);
+      parsedPriceCents = toOptionalInt(priceCents);
     } catch {
       return res
         .status(400)
         .json({ message: "Числовые поля должны быть целыми числами" });
     }
 
+    // проверка  на не отрицательное число
+    if (parsedYear !== undefined && parsedYear !== null && parsedYear < 0) {
+      return res
+        .status(400)
+        .json({ message: "year должен быть неотрицательным" });
+    }
+
+    // проверка  на не отрицательное число
+    if (
+      parsedWidthCm !== undefined &&
+      parsedWidthCm !== null &&
+      parsedWidthCm < 0
+    ) {
+      return res
+        .status(400)
+        .json({ message: "widthCm должен быть неотрицательным" });
+    }
+
+    // проверка  на не отрицательное число
+    if (
+      parsedHeightCm !== undefined &&
+      parsedHeightCm !== null &&
+      parsedHeightCm < 0
+    ) {
+      return res
+        .status(400)
+        .json({ message: "heightCm должен быть неотрицательным" });
+    }
+
+    // проверка  на не отрицательное число
+    if (
+      parsedPriceCents !== undefined &&
+      parsedPriceCents !== null &&
+      parsedPriceCents < 0
+    ) {
+      return res
+        .status(400)
+        .json({ message: "priceCents должен быть неотрицательным" });
+    }
+
     // объект для обновления
-    const data: any = {};
+    const data: Record<string, unknown> = {};
 
     // инициализаци объекта data
     if (cleanTitle !== undefined) data.title = cleanTitle;
@@ -271,6 +416,7 @@ router.patch("/artworks/:id", async (req: Request, res: Response) => {
     if (parsedWidthCm !== undefined) data.widthCm = parsedWidthCm;
     if (parsedHeightCm !== undefined) data.heightCm = parsedHeightCm;
     if (parsedPriceCents !== undefined) data.priceCents = parsedPriceCents;
+    if (artworkGroup !== undefined) data.artworkGroup = artworkGroup;
     if (category !== undefined) data.category = category;
     if (isPublished !== undefined) data.isPublished = isPublished;
 

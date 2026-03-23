@@ -20,8 +20,19 @@ import { api } from '../../lib/api';
 import { useNavigate } from 'react-router-dom';
 
 // Тип категории картин
-type ArtworkCategory = "PAINTING" | "WATERCOLOR" | "WALL_PAINTING";
+type ArtworkCategory =
+    "PAINTING" | "WATERCOLOR" | "WALL_PAINTING" | "RELIEF" |
+    "LITHOGRAPHY" | "DRAWING" | "EASEL_GRAPHICS" | "UNIQUE_GRAPHICS" |
+    "BRAND_IDENTITY" | "POSTER" | "PROJECT" | "ADVERTISING" | "SOUVENIR" |
+    "PORTRAIT" | "ARCHITECTURE" | "SUBJECT" | "LANDSCAPE"
 
+
+// Тип подгруппа картин
+type ArtworkGroup =
+    | "PAINTING_AND_WALL_ART"
+    | "GRAPHICS_AND_PRINTS"
+    | "DESIGN_AND_ADVERTISING"
+    | "SUBJECTS_AND_THEMES";
 
 export default function AdminArtworkCreatePage() {
     // для навигации на AdminArtworkEditPage после успешной загрузки
@@ -37,6 +48,7 @@ export default function AdminArtworkCreatePage() {
     const [priceCents, setPriceCents] = useState("");
     const [currency, setCurrency] = useState("EUR");
     const [category, setCategory] = useState<ArtworkCategory>("PAINTING");
+    const [artworkGroup, setArtworkGroup] = useState<ArtworkGroup>("PAINTING_AND_WALL_ART");
     const [isPublished, setIsPublished] = useState(false);
 
     const [error, setError] = useState("");
@@ -66,7 +78,8 @@ export default function AdminArtworkCreatePage() {
                 materials: materials.trim() || undefined,
                 priceCents: toNullableNumber(priceCents),
                 currency: currency.trim() || undefined,
-                category,
+                artworkGroup, // к какой группе относится картина
+                category, // к какой категрии относится картина
                 isPublished
             }
             const res = await api.post("/api/admin/artworks", payload);
@@ -250,7 +263,23 @@ export default function AdminArtworkCreatePage() {
                                     },
                                 }}
                             />
+                            {/* Выбор к какой группе будет относиться картина */}
+                            <FormControl fullWidth>
+                                <InputLabel id="artwork-group-label">Группа</InputLabel>
+                                <Select
+                                    labelId="artwork-group-label"
+                                    label="Группа"
+                                    value={artworkGroup}
+                                    onChange={(e) => setArtworkGroup(e.target.value as ArtworkGroup)}
+                                >
+                                    <MenuItem value="PAINTING_AND_WALL_ART">PAINTING_AND_WALL_ART</MenuItem>
+                                    <MenuItem value="GRAPHICS_AND_PRINTS">GRAPHICS_AND_PRINTS</MenuItem>
+                                    <MenuItem value="DESIGN_AND_ADVERTISING">DESIGN_AND_ADVERTISING</MenuItem>
+                                    <MenuItem value="SUBJECTS_AND_THEMES">SUBJECTS_AND_THEMES</MenuItem>
+                                </Select>
+                            </FormControl>
 
+                            {/* Выбор к какой категории будет относиться картина */}
                             <FormControl fullWidth>
                                 <InputLabel id="category-label">Категория</InputLabel>
                                 <Select
