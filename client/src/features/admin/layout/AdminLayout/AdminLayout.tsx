@@ -7,7 +7,7 @@ import {
   Typography,
 } from "@mui/material";
 import { Outlet, useNavigate } from "react-router-dom";
-import { useAuth } from "../Context/Auth/AuthContext";
+import { useAuth } from "../../auth/Context/Auth/AuthContext"
 
 export default function AdminLayout() {
   const navigate = useNavigate();

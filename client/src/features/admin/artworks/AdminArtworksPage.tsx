@@ -18,14 +18,16 @@ import {
     MenuItem
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { api } from "../../lib/api";
+import { api } from "../../../lib/api";
+import type { ArtworkGroup, ArtworkCategory } from "../../../artworksTypes/model"
 
 // тип списко картин 
 type ArtworkListItem = {
     id: string;
     title: string;
     slug: string;
-    category: "PAINTING" | "WATERCOLOR" | "WALL_PAINTING";
+    artworkGroup: ArtworkGroup;
+    category: ArtworkCategory;
     isPublished: boolean;
     createdAt: string;
     updatedAt: string;

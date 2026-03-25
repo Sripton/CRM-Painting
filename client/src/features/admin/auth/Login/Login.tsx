@@ -9,7 +9,7 @@ import {
     Typography,
     Stack,
 } from "@mui/material";
-import { api } from "../../lib/api"
+import { api } from "../../../../lib/api"
 
 import { useAuth } from "../Context/Auth/AuthContext"
 import { useNavigate } from "react-router-dom";

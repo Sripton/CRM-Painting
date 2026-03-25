@@ -1,6 +1,6 @@
 import React, { useState, createContext, useContext, useEffect, useMemo } from 'react'
-import { setAccessToken as saveAccessToken } from "../../../lib/tokenStorage"
-import { api } from '../../../lib/api';
+import { setAccessToken as saveAccessToken } from "../../../../../lib/tokenStorage"
+import { api } from '../../../../../lib/api';
 
 // Тип User
 // Определяем структуру объекта пользователя

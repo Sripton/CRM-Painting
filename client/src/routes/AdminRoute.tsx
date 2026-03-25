@@ -1,4 +1,4 @@
-import { useAuth } from '../components/Context/Auth/AuthContext'
+import { useAuth } from '../features/admin/auth/Context/Auth/AuthContext'
 import { Navigate } from 'react-router-dom';
 // Компонент-защитник (Protected Route) для админ-панели в приложении 
 // Проверяем, авторизован ли пользователь и имеет ли он роль "ADMIN". 

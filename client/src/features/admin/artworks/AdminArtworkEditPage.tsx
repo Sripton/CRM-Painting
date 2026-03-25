@@ -16,22 +16,9 @@ import {
 } from "@mui/material";
 import { AxiosError } from "axios"; // ts не понимает error.responce
 import { useNavigate, useParams } from 'react-router-dom';
-import { api } from '../../lib/api';
+import { api } from '../../../lib/api';
+import type { ArtworkGroup, ArtworkCategory } from "../../../artworksTypes/model"
 
-// Тип категории картин
-type ArtworkCategory =
-    "PAINTING" | "WATERCOLOR" | "WALL_PAINTING" | "RELIEF" |
-    "LITHOGRAPHY" | "DRAWING" | "EASEL_GRAPHICS" | "UNIQUE_GRAPHICS" |
-    "BRAND_IDENTITY" | "POSTER" | "PROJECT" | "ADVERTISING" | "SOUVENIR" |
-    "PORTRAIT" | "ARCHITECTURE" | "SUBJECT" | "LANDSCAPE"
-
-
-// Тип подгруппа картин
-type ArtworkGroup =
-    | "PAINTING_AND_WALL_ART"
-    | "GRAPHICS_AND_PRINTS"
-    | "DESIGN_AND_ADVERTISING"
-    | "SUBJECTS_AND_THEMES";
 
 
 // тип Image
@@ -76,8 +63,8 @@ export default function AdminArtworkEditPage() {
     const [materials, setMaterials] = useState("");
     const [priceCents, setPriceCents] = useState("");
     const [currency, setCurrency] = useState("EUR");
-    const [category, setCategory] = useState<ArtworkCategory>("PAINTING");
     const [artworkGroup, setArtworkGroup] = useState<ArtworkGroup>("PAINTING_AND_WALL_ART");
+    const [category, setCategory] = useState<ArtworkCategory>("PAINTING");
     const [isPublished, setIsPublished] = useState(false);
 
     const [loading, setLoading] = useState(true);
@@ -115,6 +102,7 @@ export default function AdminArtworkEditPage() {
             setMaterials(data.materials ?? "");
             setPriceCents(data.priceCents?.toString() ?? "");
             setCurrency(data.currency ?? "EUR");
+            setArtworkGroup(data.artworkGroup ?? "PAINTING_AND_WALL_ART");
             setCategory(data.category);
             setIsPublished(data.isPublished)
         } catch (error) {

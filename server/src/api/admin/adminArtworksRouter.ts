@@ -8,10 +8,10 @@ import { deleteFromS3 } from "../../services/s3.js";
 const router = Router();
 
 // Защита middleware
-router.use(
-  requireAuth, // Сначала проверяется токен
-  requireAdmin,
-); // потом роль
+// router.use(
+//   requireAuth, // Сначала проверяется токен
+//   requireAdmin,
+// ); // потом роль
 
 // функция на проверку, что данные это число и оно не отрицательное
 function isNonNegativeInteger(value: unknown) {

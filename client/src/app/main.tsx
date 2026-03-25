@@ -1,7 +1,8 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
-import { AuthProvider } from "./components/Context/Auth/AuthContext.tsx";
+import { CssBaseline } from "@mui/material";
+import { AuthProvider } from "../features/admin/auth/Context/Auth/AuthContext.tsx"
 
 // Настраиваем глобальный axios
 // axios.post(...)
@@ -12,6 +13,7 @@ import { AuthProvider } from "./components/Context/Auth/AuthContext.tsx";
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AuthProvider>
+      <CssBaseline />
       <App />
     </AuthProvider>
   </StrictMode>,
