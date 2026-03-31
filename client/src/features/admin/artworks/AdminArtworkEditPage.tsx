@@ -17,7 +17,8 @@ import {
 import { AxiosError } from "axios"; // ts не понимает error.responce
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../../lib/api';
-import type { ArtworkGroup, ArtworkCategory } from "../../../artworksTypes/model"
+import type { ArtworkGroup, ArtworkCategory } from "../../../artworksTypes/model";
+import { GROUP_LABELS, GROUP_CATEGORY_MAP, CATEGORY_LABELS } from "../../../artworksTypes/model"
 
 
 
@@ -31,10 +32,13 @@ type ImageItem = {
 };
 
 
+
+
 // тип artwork
 type Artwork = {
     id: string;
     title: string;
+    titleEn: string;
     slug: string;
     description: string | null;
     year: number | null;
@@ -55,6 +59,7 @@ export default function AdminArtworkEditPage() {
     const [artwork, setArtwork] = useState<Artwork | null>(null)
 
     const [title, setTitle] = useState("");
+    const [titleEn, setTitleEn] = useState("");
     const [slug, setSlug] = useState("");
     const [description, setDescription] = useState("");
     const [year, setYear] = useState("");
@@ -94,6 +99,7 @@ export default function AdminArtworkEditPage() {
             const data: Artwork = res.data
             setArtwork(data); // принимаем картину с сервера 
             setTitle(data.title ?? "");
+            setTitleEn(data.titleEn ?? "");
             setSlug(data.slug ?? "");
             setDescription(data.description ?? "");
             setYear(data.year?.toString() ?? "");
@@ -128,6 +134,7 @@ export default function AdminArtworkEditPage() {
         try {
             const payload = {
                 title: title.trim(),
+                titleEn: titleEn.trim(),
                 slug: slug.trim(),
                 description: description.trim(),
                 year: toNullableNumber(year),
@@ -143,6 +150,7 @@ export default function AdminArtworkEditPage() {
             const res = await api.patch(`/api/admin/artworks/${id}`, payload);
             setArtwork(res.data)
             setSuccess("Изменения сохранены");
+            navigate('/admin');
         } catch (error) {
             const err = error as AxiosError<{ message?: string }>;
             setError(err.response?.data?.message || "Ошибка сохранения");
@@ -205,6 +213,17 @@ export default function AdminArtworkEditPage() {
             setDeleting(false);
         }
     }
+
+
+    // преобразование тип artworkGroup в массив
+    const groupOptions: ArtworkGroup[] = [
+        "PAINTING_AND_WALL_ART",
+        "GRAPHICS_AND_PRINTS",
+        "DESIGN_AND_ADVERTISING",
+        "SUBJECTS_AND_THEMES"
+    ]
+
+
     return (
         <Box sx={{
             minHeight: "100vh",
@@ -263,11 +282,43 @@ export default function AdminArtworkEditPage() {
                     <Box component="form" onSubmit={handleSave}>
                         <Stack spacing={2.5}>
                             <TextField
-                                label="Название"
+                                label="Название на русском"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                                 fullWidth
                                 required
+                                InputLabelProps={{
+                                    sx: {
+                                        color: "rgba(86, 54, 33, 0.8)",
+                                        fontFamily:
+                                            '"Source Sans 3", "Helvetica Neue", Arial, sans-serif',
+                                    },
+                                }}
+                                InputProps={{
+                                    sx: {
+                                        color: "#2f1b12",
+                                        backgroundColor: "rgba(255, 248, 241, 0.7)",
+                                        borderRadius: 2,
+                                        fontFamily:
+                                            '"Source Sans 3", "Helvetica Neue", Arial, sans-serif',
+                                        "& .MuiOutlinedInput-notchedOutline": {
+                                            borderColor: "rgba(143, 97, 70, 0.5)",
+                                        },
+                                        "&:hover .MuiOutlinedInput-notchedOutline": {
+                                            borderColor: "rgba(143, 97, 70, 0.85)",
+                                        },
+                                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                                            borderColor: "#b26b3a",
+                                        },
+                                    },
+                                }}
+                            />
+                            <TextField
+                                label="Название на английском"
+                                value={titleEn}
+                                onChange={(e) => setTitleEn(e.target.value)}
+                                required
+                                fullWidth
                                 InputLabelProps={{
                                     sx: {
                                         color: "rgba(86, 54, 33, 0.8)",
@@ -368,12 +419,16 @@ export default function AdminArtworkEditPage() {
                                     labelId="artwork-group-label"
                                     label="Группа"
                                     value={artworkGroup}
-                                    onChange={(e) => setArtworkGroup(e.target.value as ArtworkGroup)}
+                                    onChange={(e) => {
+                                        const nextGroup = e.target.value as ArtworkGroup;
+                                        setArtworkGroup(nextGroup);
+                                        setCategory(GROUP_CATEGORY_MAP[nextGroup][0]);
+                                    }}
                                 >
-                                    <MenuItem value="PAINTING_AND_WALL_ART">PAINTING_AND_WALL_ART</MenuItem>
-                                    <MenuItem value="GRAPHICS_AND_PRINTS">GRAPHICS_AND_PRINTS</MenuItem>
-                                    <MenuItem value="DESIGN_AND_ADVERTISING">DESIGN_AND_ADVERTISING</MenuItem>
-                                    <MenuItem value="SUBJECTS_AND_THEMES">SUBJECTS_AND_THEMES</MenuItem>
+                                    {groupOptions.map((group) => (
+                                        <MenuItem key={group} value={group}>{GROUP_LABELS[group]}</MenuItem>
+
+                                    ))}
                                 </Select>
                             </FormControl>
 
@@ -386,12 +441,13 @@ export default function AdminArtworkEditPage() {
                                     value={category}
                                     onChange={(e) => setCategory(e.target.value as ArtworkCategory)}
                                 >
-                                    <MenuItem value="PAINTING">PAINTING</MenuItem>
-                                    <MenuItem value="WATERCOLOR">WATERCOLOR</MenuItem>
-                                    <MenuItem value="WALL_PAINTING">WALL_PAINTING</MenuItem>
+                                    {GROUP_CATEGORY_MAP[artworkGroup].map((category) => (
+                                        <MenuItem key={category} value={category} >{CATEGORY_LABELS[category]}</MenuItem>
+                                    ))}
 
                                 </Select>
                             </FormControl>
+
 
 
                             <Stack direction={{ xs: "column", md: "row" }} spacing={2}>

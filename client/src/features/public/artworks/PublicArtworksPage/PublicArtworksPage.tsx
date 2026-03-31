@@ -1,44 +1,66 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from "react-router-dom";
 import { Box, Button, Container, Stack, Typography } from '@mui/material'
-import React from 'react'
+import { api } from "../../../../lib/api";
+import type {
+    PublicArtwork,
+    ArtworkGroup,
+    ArtworkCategory
+} from "../../../../artworksTypes/model";
+import { GROUP_CATEGORY_MAP, groupArtworksByGroupAndCategory, CATEGORY_LABELS } from "../../../../artworksTypes/model"
 
 export default function PublicArtworksPage() {
-    const navItems = [
-        "FINE ART",
-        "ЛИТЕРАТУРА. НОВОСТИ",
-        "СТАТЬИ. ОТЗЫВЫ",
-        "КОНТАКТЫ",
-    ]
+    const navigate = useNavigate();
+    const location = useLocation();
+    const [artworks, setArtworks] = useState<PublicArtwork[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    // для отображения картин текущей категории 
+    const [selectedCategoryByGroup, setSelectedCategoryByGroup] = useState<Partial<Record<ArtworkGroup, ArtworkCategory | null>>>({});
+
+    // загружаем картины с сервера при рендере страницы
+    useEffect(() => {
+        async function loadArtworks() {
+            try {
+                setLoading(true);
+                setError("");
+
+                // дергаем маршрут get
+                const res = await api.get(`/api/public/artworks`);
+
+                // забираем данные 
+                setArtworks(res.data);
+            } catch {
+                setError("Не удалось загрузить картины");
+            } finally {
+                setLoading(false);
+            }
+        }
+        loadArtworks();
+    }, []);
+
+    // Группировка картин 
+    const groupedArtworks = useMemo(() => {
+        return groupArtworksByGroupAndCategory(artworks);
+    }, [artworks]);
+
+    console.log("artworks", artworks)
+
+
+    if (loading) return <Typography>Загрузка...</Typography>;
+    if (error) return <Typography>{error}</Typography>;
+
 
     return (
         <Box
             sx={{
-                bgcolor: "#f3f3f3",
-                backgroundImage:
-                    "repeating-linear-gradient(90deg, #f1f1f1 0, #f1f1f1 30px, #ffffff 30px, #ffffff 60px)",
+                bgcolor: "transparent",
             }}
         >
-            <Box
-                component="header"
-                sx={{
-                    width: "100%",
-                    bgcolor: "#f5f5f5",
-                    overflow: "hidden",
-                }}
-            >
-                <Box
-                    sx={{
-                        width: "100%",
-                        aspectRatio: "2048 / 430",
-                        backgroundImage: 'url("/img/header/header.jpg")',
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                    }}
-                />
-            </Box>
 
             <Box
                 sx={{
-                    pt: 0,
+                    pt: { xs: 3, md: 4 },
                     pb: 0,
                 }}
             >
@@ -46,49 +68,11 @@ export default function PublicArtworksPage() {
                     <Box sx={{ maxWidth: 1040, mx: "auto" }}>
                         <Box
                             sx={{
-                                bgcolor: "#f6f6f6",
-                                borderTop: "3px solid #c72626",
-                                boxShadow: "inset 0 1px 0 #ffffff",
-                            }}
-                        >
-                            <Box
-                                sx={{
-                                    display: "grid",
-                                    gridTemplateColumns: { xs: "1fr", md: "repeat(4, 1fr)" },
-                                    gap: { xs: 0.8, md: 0.8 },
-                                    py: { xs: 2, md: 1.5 },
-                                    mt: { xs: -3, md: -4.5 },
-                                }}
-                            >
-                                {navItems.map((label) => (
-                                    <Box
-                                        key={label}
-                                        sx={{
-                                            position: "relative",
-                                            border: "1px solid #3d3d3d",
-                                            bgcolor: "#ffffff",
-                                            textAlign: "center",
-                                            py: { xs: 1.8, md: 1.7 },
-                                            px: { xs: 1.5, md: 2 },
-                                            fontSize: { xs: 12, md: 13 },
-                                            letterSpacing: 1.5,
-                                            textTransform: "uppercase",
-                                            lineHeight: 1,
-                                            boxShadow: "0 1px 0 #bfbfbf",
-                                            borderRadius: 1.3,
-                                            cursor: "pointer",
-                                        }}
-                                    >
-                                        {label}
-                                    </Box>
-                                ))}
-                            </Box>
-                        </Box>
-
-                        <Box
-                            sx={{
-                                border: "1px solid #3d3d3d",
-                                bgcolor: "#ffffff",
+                                border: "1px solid #4a4f55",
+                                bgcolor: "#fbfbfa",
+                                borderRadius: 4,
+                                boxShadow:
+                                    "0 20px 45px rgba(47, 54, 64, 0.12), 0 8px 18px rgba(47, 54, 64, 0.06)",
                                 px: { xs: 3, md: 6 },
                                 py: { xs: 3.5, md: 4.5 },
                                 mt: { xs: 4, md: 5 },
@@ -102,6 +86,9 @@ export default function PublicArtworksPage() {
                                     textTransform: "uppercase",
                                     fontSize: { xs: 12, md: 13 },
                                     mb: { xs: 2.5, md: 3 },
+                                    fontFamily:
+                                        '"Playfair Display", "Georgia", "Times New Roman", serif',
+                                    color: "#5a6f8a",
                                 }}
                             >
                                 БИОГРАФИЯ | ХУДОЖНИК ГАЗАЛИ-ДИБИР ИЗРАИЛОВ
@@ -116,8 +103,9 @@ export default function PublicArtworksPage() {
                                     sx={{
                                         width: { xs: "100%", md: 320 },
                                         height: { xs: 200, md: 210 },
-                                        border: "1px solid #3d3d3d",
-                                        backgroundImage: 'url("/img/content/author.jpg")',
+                                        border: "1px solid #4a4f55",
+                                        borderRadius: 3,
+                                        backgroundImage: 'url("/img/author.jpg")',
                                         backgroundSize: "cover",
                                         backgroundPosition: "center",
                                     }}
@@ -127,8 +115,10 @@ export default function PublicArtworksPage() {
                                         sx={{
                                             fontSize: { xs: 13, md: 14 },
                                             lineHeight: 1.3,
-                                            color: "#1f1f1f",
+                                            color: "#2f3640",
                                             whiteSpace: "pre-line",
+                                            fontFamily:
+                                                '"Source Sans 3", "Helvetica Neue", Arial, sans-serif',
                                         }}
                                     >
                                         {`Родился в 1942 году.
@@ -143,7 +133,6 @@ export default function PublicArtworksPage() {
                                     </Typography>
                                 </Box>
                             </Stack>
-
                             <Box
                                 sx={{
                                     display: "flex",
@@ -153,23 +142,27 @@ export default function PublicArtworksPage() {
                                 }}
                             >
                                 <Button
-                                    variant="outlined"
+                                    variant="contained"
                                     sx={{
-                                        borderRadius: 0,
-                                        border: "none",
-                                        color: "#1f1f1f",
-                                        bgcolor: "transparent",
+                                        borderRadius: 999,
+                                        border: "1px solid #5a6f8a",
+                                        color: "#f7f7f7",
+                                        background:
+                                            "linear-gradient(135deg, #5a6f8a 0%, #8094aa 45%, #465a72 100%)",
                                         px: { xs: 2.6, md: 3.2 },
                                         py: { xs: 0.9, md: 1 },
                                         fontSize: 12,
                                         letterSpacing: 1.2,
                                         textTransform: "uppercase",
                                         lineHeight: 1,
-                                        boxShadow: "none",
+                                        boxShadow:
+                                            "0 16px 30px rgba(47, 54, 64, 0.22), 0 0 0 1px rgba(95, 111, 134, 0.35)",
                                         "&:hover": {
-                                            border: "none",
-                                            boxShadow: "none",
-                                            bgcolor: "transparent",
+                                            border: "1px solid #4f6480",
+                                            boxShadow:
+                                                "0 18px 36px rgba(47, 54, 64, 0.3), 0 0 0 1px rgba(90, 111, 138, 0.5)",
+                                            background:
+                                                "linear-gradient(135deg, #6a7f99 0%, #8ea0b4 45%, #4f657e 100%)",
                                         },
                                         "@keyframes catalogDots": {
                                             "0%": { opacity: 0 },
@@ -206,588 +199,227 @@ export default function PublicArtworksPage() {
                                     </Box>
                                 </Button>
                             </Box>
-
                         </Box>
 
-                        {/* --------- Катеории картин первой группы -------- */}
-                        <Box
-                            sx={{
-                                display: "grid",
-                                gridTemplateColumns: { xs: "1fr", md: "repeat(4, 1fr)" },
-                                gap: { xs: 1.5, md: 2 },
-                                mt: { xs: 10, md: 12 },
-                            }}
-                        >
-                            {[
-                                "Картины-живопись",
-                                "Акварель",
-                                "Стено-роспись",
-                                "Рельеф (скульптура)",
-                            ].map((label) => (
-                                <Button
-                                    key={`${label}-outside`}
-                                    variant="outlined"
-                                    sx={{
-                                        borderColor: "#3d3d3d",
-                                        color: "#1f1f1f",
-                                        bgcolor: "#ffffff",
-                                        width: "100%",
-                                        px: { xs: 1.5, md: 2 },
-                                        py: { xs: 1.8, md: 1.7 },
-                                        fontSize: { xs: 12, md: 13 },
-                                        letterSpacing: 1.5,
-                                        textTransform: "uppercase",
-                                        lineHeight: 1,
-                                        boxShadow: "0 1px 0 #bfbfbf",
-                                        borderRadius: 1.3,
-                                        cursor: "pointer",
+                        {(Object.keys(GROUP_CATEGORY_MAP) as ArtworkGroup[]).map((group) => {
+                            const categories = GROUP_CATEGORY_MAP[group];
+                            // const groupItems = categories.flatMap((category) => groupedArtworks[group][category]);
+                            const selectedCategory = selectedCategoryByGroup[group] ?? categories[0];
+                            const visibleItems = groupedArtworks[group][selectedCategory] ?? [];
+                            const displayedItems =
+                                visibleItems.length >= 24 ?
+                                    visibleItems.slice(0, 24) :
+                                    visibleItems.slice(0, 12)
 
-                                    }}
-                                >
-                                    {label}
-                                </Button>
-                            ))}
-                        </Box>
-
-                        {/* --------- Первый блок ---------*/}
-                        <Box
-                            sx={{
-                                mt: { xs: 3, md: 4 },
-                                bgcolor: "#ffffff",
-                                border: "1px solid #3d3d3d",
-                                p: { xs: 2, md: 3 },
-                            }}
-                        >
-                            <Box
-                                sx={{
-                                    display: "grid",
-                                    gridTemplateColumns: {
-                                        xs: "repeat(2, 1fr)",
-                                        sm: "repeat(3, 1fr)",
-                                        md: "repeat(6, 1fr)",
-                                    },
-                                    gap: { xs: 1, md: 1.2 },
-                                }}
-                            >
-                                {Array.from({ length: 18 }).map((_, idx) => (
+                            return (
+                                <React.Fragment key={group}>
                                     <Box
-                                        key={`artwork-slot-${idx}`}
                                         sx={{
-                                            width: "100%",
-                                            aspectRatio: "4 / 3",
-                                            bgcolor: "#111111",
-                                            border: "1px solid #3d3d3d",
-                                            backgroundSize: "cover",
-                                            backgroundPosition: "center",
+                                            display: "grid",
+                                            gridTemplateColumns: { xs: "1fr", md: "repeat(4, 1fr)" },
+                                            gap: { xs: 1.5, md: 2 },
+                                            mt: { xs: 10, md: 12 },
                                         }}
-                                    />
-                                ))}
-                            </Box>
-                        </Box>
+                                    >
+                                        {categories.map((category) => (
+                                            <Button
+                                                key={`${category}-outside`}
+                                                variant="outlined"
+                                                onClick={() => {
+                                                    setSelectedCategoryByGroup((prev) => ({
+                                                        // prev = {}
+                                                        ...prev,
+                                                        [group]: category
+                                                    }))
+                                                }}
+                                                sx={{
+                                                    borderColor: "#4a4f55",
+                                                    color: "#2f3640",
+                                                    bgcolor: selectedCategory === category ? "#dfe7ef" : "#fbfbfa",
+                                                    width: "100%",
+                                                    px: { xs: 1.5, md: 2 },
+                                                    py: { xs: 1.8, md: 1.7 },
+                                                    fontSize: { xs: 12, md: 13 },
+                                                    fontWeight: 700,
+                                                    letterSpacing: 1.5,
+                                                    textTransform: "uppercase",
+                                                    lineHeight: 1,
+                                                    boxShadow: "0 1px 0 #cfd2d6",
+                                                    borderRadius: 1.3,
+                                                    cursor: "pointer",
+                                                    fontFamily:
+                                                        '"Playfair Display", "Georgia", "Times New Roman", serif',
+                                                    "&:hover": {
+                                                        borderColor: "#4f6480",
+                                                        bgcolor: "#f1f4f7",
+                                                        boxShadow:
+                                                            "0 10px 22px rgba(47, 54, 64, 0.14), 0 0 0 1px rgba(90, 111, 138, 0.2)",
+                                                        color: "#1f2a35",
+                                                    },
 
-                        {/* --------- Кнопка перейти в каталог первого блока ----------- */}
-                        <Box
-                            sx={{
-                                display: "flex",
-                                justifyContent: "flex-end",
-                                mt: { xs: 2.5, md: 3 },
-                                mb: { xs: 10, md: 12 },
-                            }}
-                        >
-                            <Button
-                                variant="outlined"
-                                sx={{
-                                    borderRadius: 0,
-                                    border: "none",
-                                    color: "#1f1f1f",
-                                    bgcolor: "transparent",
-                                    px: { xs: 2.6, md: 3.2 },
-                                    py: { xs: 0.9, md: 1 },
-                                    fontSize: 12,
-                                    letterSpacing: 1.2,
-                                    textTransform: "uppercase",
-                                    lineHeight: 1,
-                                    boxShadow: "none",
-                                    "&:hover": {
-                                        border: "none",
-                                        boxShadow: "none",
-                                        bgcolor: "transparent",
-                                    },
-                                    "@keyframes catalogDots": {
-                                        "0%": { opacity: 0 },
-                                        "20%": { opacity: 1 },
-                                        "100%": { opacity: 0 },
-                                    },
-                                    "& .catalog-dots": {
-                                        display: "inline-block",
-                                        minWidth: 24,
-                                        textAlign: "left",
-                                        marginLeft: 6,
-                                    },
-                                    "& .catalog-dot": {
-                                        display: "inline-block",
-                                        opacity: 0,
-                                        animation: "catalogDots 1.2s infinite",
-                                    },
-                                    "& .catalog-dot:nth-of-type(1)": {
-                                        animationDelay: "0s",
-                                    },
-                                    "& .catalog-dot:nth-of-type(2)": {
-                                        animationDelay: "0.2s",
-                                    },
-                                    "& .catalog-dot:nth-of-type(3)": {
-                                        animationDelay: "0.4s",
-                                    },
-                                }}
-                            >
-                                Перейти в каталог
-                                <Box component="span" className="catalog-dots">
-                                    <Box component="span" className="catalog-dot">{" "}{">"}</Box>
-                                    <Box component="span" className="catalog-dot">{">"}</Box>
-                                    <Box component="span" className="catalog-dot">{">"}</Box>
-                                </Box>
-                            </Button>
-                        </Box>
+                                                }}
+                                            >
+                                                {`${CATEGORY_LABELS[category]}`}
+                                            </Button>
+                                        ))}
+                                    </Box>
 
-
-                        {/* ----------- Катеории картин второй группы ----------  */}
-                        <Box
-                            sx={{
-                                display: "grid",
-                                gridTemplateColumns: { xs: "1fr", md: "repeat(4, 1fr)" },
-                                gap: { xs: 1.5, md: 2 },
-                                mt: { xs: 5, md: 6 },
-                            }}
-                        >
-                            {[
-                                "Литографии",
-                                "Рисунки",
-                                "Станковая-графика",
-                                "Уникальная графика",
-                            ].map((label) => (
-                                <Button
-                                    key={`${label}-outside`}
-                                    variant="outlined"
-                                    sx={{
-                                        borderColor: "#3d3d3d",
-                                        color: "#1f1f1f",
-                                        bgcolor: "#ffffff",
-                                        width: "100%",
-                                        px: { xs: 1.5, md: 2 },
-                                        py: { xs: 1.8, md: 1.7 },
-                                        fontSize: { xs: 12, md: 13 },
-                                        letterSpacing: 1.5,
-                                        textTransform: "uppercase",
-                                        lineHeight: 1,
-                                        boxShadow: "0 1px 0 #bfbfbf",
-                                        borderRadius: 1.3,
-                                        cursor: "pointer",
-
-                                    }}
-                                >
-                                    {label}
-                                </Button>
-                            ))}
-                        </Box>
-
-
-                        {/* --------- Второй блок ---------*/}
-                        <Box
-                            sx={{
-                                mt: { xs: 3, md: 4 },
-                                bgcolor: "#ffffff",
-                                border: "1px solid #3d3d3d",
-                                p: { xs: 2, md: 3 },
-                            }}
-                        >
-                            <Box
-                                sx={{
-                                    display: "grid",
-                                    gridTemplateColumns: {
-                                        xs: "repeat(2, 1fr)",
-                                        sm: "repeat(3, 1fr)",
-                                        md: "repeat(6, 1fr)",
-                                    },
-                                    gap: { xs: 1, md: 1.2 },
-                                }}
-                            >
-                                {Array.from({ length: 18 }).map((_, idx) => (
                                     <Box
-                                        key={`artwork-slot-2-${idx}`}
                                         sx={{
-                                            width: "100%",
-                                            aspectRatio: "4 / 3",
-                                            bgcolor: "#111111",
-                                            border: "1px solid #3d3d3d",
-                                            backgroundSize: "cover",
-                                            backgroundPosition: "center",
+                                            mt: { xs: 3, md: 4 },
+                                            bgcolor: "#fbfbfa",
+                                            border: "1px solid #4a4f55",
+                                            p: { xs: 2, md: 3 },
                                         }}
-                                    />
-                                ))}
-                            </Box>
-                        </Box>
+                                    >
+                                        <Box
+                                            sx={{
+                                                display: "grid",
+                                                gridTemplateColumns: {
+                                                    xs: "repeat(2, 1fr)",
+                                                    sm: "repeat(3, 1fr)",
+                                                    md: "repeat(6, 1fr)",
+                                                },
+                                                gap: { xs: 1, md: 1.2 },
+                                            }}
+                                        >
+                                            {displayedItems.length === 0 ? (
+                                                <Box
+                                                    sx={{
+                                                        gridColumn: "1 / -1",
+                                                        border: "1px dashed #4a4f55",
+                                                        bgcolor: "#f7f7f5",
+                                                        borderRadius: 2,
+                                                        px: { xs: 2, md: 3 },
+                                                        py: { xs: 2.5, md: 3 },
+                                                        textAlign: "center",
+                                                    }}
+                                                >
+                                                    <Typography
+                                                        sx={{
+                                                            fontSize: { xs: 12, md: 13 },
+                                                            fontWeight: 700,
+                                                            letterSpacing: 1.4,
+                                                            textTransform: "uppercase",
+                                                            color: "#5a6f8a",
+                                                            mb: 0.6,
+                                                            fontFamily:
+                                                                '"Playfair Display", "Georgia", "Times New Roman", serif',
+                                                        }}
+                                                    >
+                                                        Данный раздел пока не доступен
+                                                    </Typography>
 
-                        {/* --------- Кнопка перейти в каталог Второго блока ----------- */}
-                        <Box
-                            sx={{
-                                display: "flex",
-                                justifyContent: "flex-end",
-                                mt: { xs: 2.5, md: 3 },
-                                mb: { xs: 10, md: 12 },
-                            }}
-                        >
-                            <Button
-                                variant="outlined"
-                                sx={{
-                                    borderRadius: 0,
-                                    border: "none",
-                                    color: "#1f1f1f",
-                                    bgcolor: "transparent",
-                                    px: { xs: 2.6, md: 3.2 },
-                                    py: { xs: 0.9, md: 1 },
-                                    fontSize: 12,
-                                    letterSpacing: 1.2,
-                                    textTransform: "uppercase",
-                                    lineHeight: 1,
-                                    boxShadow: "none",
-                                    "&:hover": {
-                                        border: "none",
-                                        boxShadow: "none",
-                                        bgcolor: "transparent",
-                                    },
-                                    "@keyframes catalogDots": {
-                                        "0%": { opacity: 0 },
-                                        "20%": { opacity: 1 },
-                                        "100%": { opacity: 0 },
-                                    },
-                                    "& .catalog-dots": {
-                                        display: "inline-block",
-                                        minWidth: 24,
-                                        textAlign: "left",
-                                        marginLeft: 6,
-                                    },
-                                    "& .catalog-dot": {
-                                        display: "inline-block",
-                                        opacity: 0,
-                                        animation: "catalogDots 1.2s infinite",
-                                    },
-                                    "& .catalog-dot:nth-of-type(1)": {
-                                        animationDelay: "0s",
-                                    },
-                                    "& .catalog-dot:nth-of-type(2)": {
-                                        animationDelay: "0.2s",
-                                    },
-                                    "& .catalog-dot:nth-of-type(3)": {
-                                        animationDelay: "0.4s",
-                                    },
-                                }}
-                            >
-                                Перейти в каталог
-                                <Box component="span" className="catalog-dots">
-                                    <Box component="span" className="catalog-dot">{" "}{">"}</Box>
-                                    <Box component="span" className="catalog-dot">{">"}</Box>
-                                    <Box component="span" className="catalog-dot">{">"}</Box>
-                                </Box>
-                            </Button>
-                        </Box>
+                                                </Box>
+                                            ) : displayedItems.map((artwork) => (
+                                                <Box
+                                                    key={artwork.id}
+                                                    sx={{
+                                                        width: "100%",
+                                                        aspectRatio: "4 / 3",
+                                                        bgcolor: "#2b2f34",
+                                                        border: "1px solid #4a4f55",
+                                                        backgroundColor: "#2b2f34",
+                                                        // отображение картин
+                                                        backgroundImage: artwork.image?.url ?
+                                                            `url(${artwork.image.url})`
+                                                            : "none",
+                                                        backgroundSize: "cover",
+                                                        backgroundPosition: "center",
+                                                        cursor: "pointer",
+                                                        transition: "transform 160ms ease, box-shadow 160ms ease",
+                                                        "&:hover": {
+                                                            transform: "translateY(-2px)",
+                                                            boxShadow: "0 10px 22px rgba(47, 54, 64, 0.18)",
+                                                        },
+                                                    }}
+                                                    onClick={() => navigate(`/artworks/${artwork.slug}`, 
+                                                        { state: { from: location }  // вручную передаём в страницу деталей объект location той страницы, с которой был переход.
 
+                                                    })}
+                                                />
+                                            ))}
 
-
-                        {/* --------- Катеории картин третьей группы -------- */}
-                        <Box
-                            sx={{
-                                display: "grid",
-                                gridTemplateColumns: { xs: "1fr", md: "repeat(4, 1fr)" },
-                                gap: { xs: 1.5, md: 2 },
-                                mt: { xs: 5, md: 6 },
-                            }}
-                        >
-                            {[
-                                "Фирменные стили",
-                                "Плакаты",
-                                "Проекты",
-                                "Реклама, Сувениры",
-                            ].map((label) => (
-                                <Button
-                                    key={`${label}-outside`}
-                                    variant="outlined"
-                                    sx={{
-                                        borderColor: "#3d3d3d",
-                                        color: "#1f1f1f",
-                                        bgcolor: "#ffffff",
-                                        width: "100%",
-                                        px: { xs: 1.5, md: 2 },
-                                        py: { xs: 1.8, md: 1.7 },
-                                        fontSize: { xs: 12, md: 13 },
-                                        letterSpacing: 1.5,
-                                        textTransform: "uppercase",
-                                        lineHeight: 1,
-                                        boxShadow: "0 1px 0 #bfbfbf",
-                                        borderRadius: 1.3,
-                                        cursor: "pointer",
-
-                                    }}
-                                >
-                                    {label}
-                                </Button>
-                            ))}
-                        </Box>
-
-                        {/* --------- Третий блок ---------*/}
-                        <Box
-                            sx={{
-                                mt: { xs: 3, md: 4 },
-                                bgcolor: "#ffffff",
-                                border: "1px solid #3d3d3d",
-                                p: { xs: 2, md: 3 },
-                            }}
-                        >
-                            <Box
-                                sx={{
-                                    display: "grid",
-                                    gridTemplateColumns: {
-                                        xs: "repeat(2, 1fr)",
-                                        sm: "repeat(3, 1fr)",
-                                        md: "repeat(6, 1fr)",
-                                    },
-                                    gap: { xs: 1, md: 1.2 },
-                                }}
-                            >
-                                {Array.from({ length: 18 }).map((_, idx) => (
+                                        </Box>
+                                    </Box>
                                     <Box
-                                        key={`artwork-slot-3-${idx}`}
                                         sx={{
-                                            width: "100%",
-                                            aspectRatio: "4 / 3",
-                                            bgcolor: "#111111",
-                                            border: "1px solid #3d3d3d",
-                                            backgroundSize: "cover",
-                                            backgroundPosition: "center",
+                                            display: "flex",
+                                            justifyContent: "flex-end",
+                                            mt: { xs: 2.5, md: 3 },
+                                            mb: { xs: 10, md: 12 },
                                         }}
-                                    />
-                                ))}
-                            </Box>
-                        </Box>
-
-
-                        {/* --------- Кнопка перейти в каталог третьего блока ----------- */}
-                        <Box
-                            sx={{
-                                display: "flex",
-                                justifyContent: "flex-end",
-                                mt: { xs: 2.5, md: 3 },
-                                mb: { xs: 10, md: 12 },
-                            }}
-                        >
-                            <Button
-                                variant="outlined"
-                                sx={{
-                                    borderRadius: 0,
-                                    border: "none",
-                                    color: "#1f1f1f",
-                                    bgcolor: "transparent",
-                                    px: { xs: 2.6, md: 3.2 },
-                                    py: { xs: 0.9, md: 1 },
-                                    fontSize: 12,
-                                    letterSpacing: 1.2,
-                                    textTransform: "uppercase",
-                                    lineHeight: 1,
-                                    boxShadow: "none",
-                                    "&:hover": {
-                                        border: "none",
-                                        boxShadow: "none",
-                                        bgcolor: "transparent",
-                                    },
-                                    "@keyframes catalogDots": {
-                                        "0%": { opacity: 0 },
-                                        "20%": { opacity: 1 },
-                                        "100%": { opacity: 0 },
-                                    },
-                                    "& .catalog-dots": {
-                                        display: "inline-block",
-                                        minWidth: 24,
-                                        textAlign: "left",
-                                        marginLeft: 6,
-                                    },
-                                    "& .catalog-dot": {
-                                        display: "inline-block",
-                                        opacity: 0,
-                                        animation: "catalogDots 1.2s infinite",
-                                    },
-                                    "& .catalog-dot:nth-of-type(1)": {
-                                        animationDelay: "0s",
-                                    },
-                                    "& .catalog-dot:nth-of-type(2)": {
-                                        animationDelay: "0.2s",
-                                    },
-                                    "& .catalog-dot:nth-of-type(3)": {
-                                        animationDelay: "0.4s",
-                                    },
-                                }}
-                            >
-                                Перейти в каталог
-                                <Box component="span" className="catalog-dots">
-                                    <Box component="span" className="catalog-dot">{" "}{">"}</Box>
-                                    <Box component="span" className="catalog-dot">{">"}</Box>
-                                    <Box component="span" className="catalog-dot">{">"}</Box>
-                                </Box>
-                            </Button>
-                        </Box>
-
-                        {/* --------- Категории картин четвертой группы -------- */}
-                        <Box
-                            sx={{
-                                display: "grid",
-                                gridTemplateColumns: { xs: "1fr", md: "repeat(4, 1fr)" },
-                                gap: { xs: 1.5, md: 2 },
-                                mt: { xs: 5, md: 6 },
-                            }}
-                        >
-                            {[
-                                "Портреты",
-                                "Архитектура",
-                                "Сюжеты. темы",
-                                "Пейзажи",
-                            ].map((label) => (
-                                <Button
-                                    key={`${label}-outside`}
-                                    variant="outlined"
-                                    sx={{
-                                        borderColor: "#3d3d3d",
-                                        color: "#1f1f1f",
-                                        bgcolor: "#ffffff",
-                                        width: "100%",
-                                        px: { xs: 1.5, md: 2 },
-                                        py: { xs: 1.8, md: 1.7 },
-                                        fontSize: { xs: 12, md: 13 },
-                                        letterSpacing: 1.5,
-                                        textTransform: "uppercase",
-                                        lineHeight: 1,
-                                        boxShadow: "0 1px 0 #bfbfbf",
-                                        borderRadius: 1.3,
-                                        cursor: "pointer",
-
-                                    }}
-                                >
-                                    {label}
-                                </Button>
-                            ))}
-                        </Box>
-
-                        {/* --------- Четвертый блок ---------*/}
-                        <Box
-                            sx={{
-                                mt: { xs: 3, md: 4 },
-                                bgcolor: "#ffffff",
-                                border: "1px solid #3d3d3d",
-                                p: { xs: 2, md: 3 },
-                            }}
-                        >
-                            <Box
-                                sx={{
-                                    display: "grid",
-                                    gridTemplateColumns: {
-                                        xs: "repeat(2, 1fr)",
-                                        sm: "repeat(3, 1fr)",
-                                        md: "repeat(6, 1fr)",
-                                    },
-                                    gap: { xs: 1, md: 1.2 },
-                                }}
-                            >
-                                {Array.from({ length: 18 }).map((_, idx) => (
-                                    <Box
-                                        key={`artwork-slot-3-${idx}`}
-                                        sx={{
-                                            width: "100%",
-                                            aspectRatio: "4 / 3",
-                                            bgcolor: "#111111",
-                                            border: "1px solid #3d3d3d",
-                                            backgroundSize: "cover",
-                                            backgroundPosition: "center",
-                                        }}
-                                    />
-                                ))}
-                            </Box>
-                        </Box>
-
-
-                        {/* --------- Кнопка перейти в каталог четвертого блока ----------- */}
-                        <Box
-                            sx={{
-                                display: "flex",
-                                justifyContent: "flex-end",
-                                mt: { xs: 2.5, md: 3 },
-                                mb: { xs: 10, md: 12 },
-                            }}
-                        >
-                            <Button
-                                variant="outlined"
-                                sx={{
-                                    borderRadius: 0,
-                                    border: "none",
-                                    color: "#1f1f1f",
-                                    bgcolor: "transparent",
-                                    px: { xs: 2.6, md: 3.2 },
-                                    py: { xs: 0.9, md: 1 },
-                                    fontSize: 12,
-                                    letterSpacing: 1.2,
-                                    textTransform: "uppercase",
-                                    lineHeight: 1,
-                                    boxShadow: "none",
-                                    "&:hover": {
-                                        border: "none",
-                                        boxShadow: "none",
-                                        bgcolor: "transparent",
-                                    },
-                                    "@keyframes catalogDots": {
-                                        "0%": { opacity: 0 },
-                                        "20%": { opacity: 1 },
-                                        "100%": { opacity: 0 },
-                                    },
-                                    "& .catalog-dots": {
-                                        display: "inline-block",
-                                        minWidth: 24,
-                                        textAlign: "left",
-                                        marginLeft: 6,
-                                    },
-                                    "& .catalog-dot": {
-                                        display: "inline-block",
-                                        opacity: 0,
-                                        animation: "catalogDots 1.2s infinite",
-                                    },
-                                    "& .catalog-dot:nth-of-type(1)": {
-                                        animationDelay: "0s",
-                                    },
-                                    "& .catalog-dot:nth-of-type(2)": {
-                                        animationDelay: "0.2s",
-                                    },
-                                    "& .catalog-dot:nth-of-type(3)": {
-                                        animationDelay: "0.4s",
-                                    },
-                                }}
-                            >
-                                Перейти в каталог
-                                <Box component="span" className="catalog-dots">
-                                    <Box component="span" className="catalog-dot">{" "}{">"}</Box>
-                                    <Box component="span" className="catalog-dot">{">"}</Box>
-                                    <Box component="span" className="catalog-dot">{">"}</Box>
-                                </Box>
-                            </Button>
-                        </Box>
-
-
-
-
+                                    >
+                                        <Button
+                                            variant="outlined"
+                                            onClick={() => navigate(`/artworks?group=${group}&category=${selectedCategory}`)}
+                                            sx={{
+                                                borderRadius: 999,
+                                                border: "1px solid #5a6f8a",
+                                                color: "#2f3640",
+                                                bgcolor: "#fbfbfa",
+                                                px: { xs: 2.6, md: 3.2 },
+                                                py: { xs: 0.9, md: 1 },
+                                                fontSize: 12,
+                                                fontWeight: 700,
+                                                letterSpacing: 1.2,
+                                                textTransform: "uppercase",
+                                                lineHeight: 1,
+                                                boxShadow: "0 16px 30px rgba(47, 54, 64, 0.14), 0 0 0 1px rgba(95, 111, 134, 0.22)",
+                                                "&:hover": {
+                                                    border: "1px solid #4f6480",
+                                                    boxShadow:
+                                                        "0 18px 36px rgba(47, 54, 64, 0.26), 0 0 0 1px rgba(95, 111, 134, 0.35)",
+                                                    bgcolor: "#f1f4f7",
+                                                    color: "#1f2a35",
+                                                },
+                                                "@keyframes catalogDots": {
+                                                    "0%": { opacity: 0 },
+                                                    "20%": { opacity: 1 },
+                                                    "100%": { opacity: 0 },
+                                                },
+                                                "& .catalog-dots": {
+                                                    display: "inline-block",
+                                                    minWidth: 24,
+                                                    textAlign: "left",
+                                                    marginLeft: 6,
+                                                },
+                                                "& .catalog-dot": {
+                                                    display: "inline-block",
+                                                    opacity: 0,
+                                                    animation: "catalogDots 1.2s infinite",
+                                                },
+                                                "& .catalog-dot:nth-of-type(1)": {
+                                                    animationDelay: "0s",
+                                                },
+                                                "& .catalog-dot:nth-of-type(2)": {
+                                                    animationDelay: "0.2s",
+                                                },
+                                                "& .catalog-dot:nth-of-type(3)": {
+                                                    animationDelay: "0.4s",
+                                                },
+                                            }}
+                                        >
+                                            Перейти в каталог
+                                            <Box component="span" className="catalog-dots">
+                                                <Box component="span" className="catalog-dot">{" "}{">"}</Box>
+                                                <Box component="span" className="catalog-dot">{">"}</Box>
+                                                <Box component="span" className="catalog-dot">{">"}</Box>
+                                            </Box>
+                                        </Button>
+                                    </Box>
+                                </React.Fragment>
+                            )
+                        })}
                     </Box>
-
                 </Container>
-            </Box >
+            </Box>
 
             <Box
                 component="footer"
                 sx={{
-                    borderTop: "1px solid #3d3d3d",
-                    bgcolor: "#f6f6f6",
+                    borderTop: "1px solid #4a4f55",
+                    bgcolor: "#f2f2f1",
                     px: { xs: 2.5, md: 4 },
                     py: { xs: 3, md: 3.5 },
                 }}

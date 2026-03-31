@@ -8,11 +8,12 @@ router.get("/artworks", async (req: Request, res: Response) => {
   try {
     // Забираем все опубликованные картины
     const artworks = await prisma.artwork.findMany({
-      where: { isPublished: true },
+      where: { isPublished: true }, // отдаем только те картины у которых статус = опубликован
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
         title: true,
+        titleEn: true,
         slug: true,
         description: true,
         year: true,
@@ -87,3 +88,5 @@ router.get("/artworks/:slug", async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Ошибка сервера" });
   }
 });
+
+export default router;

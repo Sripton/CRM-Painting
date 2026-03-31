@@ -12,9 +12,11 @@ import AdminArtworkEditPage from "../features/admin/artworks/AdminArtworkEditPag
 // Компоненты Public
 import PublicLayout from "../features/public/layout/PublicLayout";
 import PublicArtworksPage from "../features/public/artworks/PublicArtworksPage";
+import PublicArtworkDetailsPage from "../features/public/artworks/PublicArtworkDetailsPage";
+import ArtworksCatalogPage from "../features/public/artworks/ArtworksCatalogPage";
+
 
 export default function App() {
-
   return (
     <>
       <BrowserRouter>
@@ -22,6 +24,8 @@ export default function App() {
           {/* public */}
           <Route element={<PublicLayout />} >
             <Route path="/" element={<PublicArtworksPage />} />
+            <Route path="/artworks" element={<ArtworksCatalogPage />} />
+            <Route path="/artworks/:slug" element={<PublicArtworkDetailsPage />} />
           </Route>
           {/* admin login */}
           <Route path="/admin/login" element={<Login />} />

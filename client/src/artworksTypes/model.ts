@@ -17,7 +17,6 @@ export type ArtworkCategory =
   | "POSTER"
   | "PROJECT"
   | "ADVERTISING"
-  | "SOUVENIR"
   | "PORTRAIT"
   | "ARCHITECTURE"
   | "SUBJECT"
@@ -26,6 +25,7 @@ export type ArtworkCategory =
 export type PublicArtwork = {
   id: string;
   title: string;
+  titleEn: string;
   slug: string;
   description: string | null;
   year: number | null;
@@ -40,6 +40,8 @@ export type PublicArtwork = {
     url: string;
   } | null;
 };
+
+
 
 export const GROUP_LABELS: Record<ArtworkGroup, string> = {
   PAINTING_AND_WALL_ART: "Живопись и настенное искусство",
@@ -62,8 +64,7 @@ export const CATEGORY_LABELS: Record<ArtworkCategory, string> = {
   BRAND_IDENTITY: "Фирменный стиль",
   POSTER: "Плакат",
   PROJECT: "Проект",
-  ADVERTISING: "Реклама",
-  SOUVENIR: "Сувенир",
+  ADVERTISING: "Реклама, Сувениры",
 
   PORTRAIT: "Портрет",
   ARCHITECTURE: "Архитектура",
@@ -84,7 +85,6 @@ export const GROUP_CATEGORY_MAP: Record<ArtworkGroup, ArtworkCategory[]> = {
     "POSTER",
     "PROJECT",
     "ADVERTISING",
-    "SOUVENIR",
   ],
   SUBJECTS_AND_THEMES: ["PORTRAIT", "ARCHITECTURE", "SUBJECT", "LANDSCAPE"],
 };

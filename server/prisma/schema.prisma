@@ -55,7 +55,6 @@ enum ArtworkCategory {
   POSTER
   PROJECT
   ADVERTISING
-  SOUVENIR
 
   PORTRAIT
   ARCHITECTURE
@@ -66,6 +65,7 @@ enum ArtworkCategory {
 model Artwork {
   id          String  @id @default(uuid())
   title       String
+  titleEn     String
   slug        String  @unique // SEO и красивые URL
   description String?
   year        Int?

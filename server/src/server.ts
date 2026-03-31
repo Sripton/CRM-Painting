@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser";
 import authAPIRouter from "./api/auth/authRouter.js";
 import artWorkImageAPIRouter from "./api/admin/artworksImagesRouter.js";
 import adminArtworksRouter from "./api/admin/adminArtworksRouter.js";
+import publicArtWorksRouter from "./api/publicRouter/artworks.js";
 const app = express();
 const PORT = process.env.PORT;
 
@@ -22,6 +23,7 @@ app.use(
 ); // Настраиваем CORS, чтобы разрешить кросс-доменные запросы с передачей куков
 
 // роутеры
+app.use("/api/public", publicArtWorksRouter);
 app.use("/api/auth", authAPIRouter);
 app.use("/api/admin", artWorkImageAPIRouter);
 app.use("/api/admin", adminArtworksRouter);

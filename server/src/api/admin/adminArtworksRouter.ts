@@ -8,10 +8,10 @@ import { deleteFromS3 } from "../../services/s3.js";
 const router = Router();
 
 // Защита middleware
-// router.use(
-//   requireAuth, // Сначала проверяется токен
-//   requireAdmin,
-// ); // потом роль
+router.use(
+  requireAuth, // Сначала проверяется токен
+  requireAdmin,
+); // потом роль
 
 // функция на проверку, что данные это число и оно не отрицательное
 function isNonNegativeInteger(value: unknown) {
@@ -70,6 +70,7 @@ router.get("/artworks", async (req: Request, res: Response) => {
       select: {
         id: true,
         title: true,
+        titleEn: true,
         slug: true,
         artworkGroup: true,
         category: true,
@@ -96,6 +97,7 @@ router.post("/artworks", async (req: Request, res: Response) => {
   try {
     const {
       title,
+      titleEn,
       slug,
       description,
       year,
@@ -112,10 +114,18 @@ router.post("/artworks", async (req: Request, res: Response) => {
     // нормализация title/slug перед созданием. не попадут пустые строки
     // чтобы если  title или slug не придут, сервер не упал до проверки
     const cleanTitle = typeof title === "string" ? title.trim() : "";
+    const cleanTitleEn = typeof titleEn === "string" ? titleEn.trim() : "";
     const cleanSlug = typeof slug === "string" ? slug.trim() : "";
 
     // если не указан title
     if (!cleanTitle || cleanTitle.length < 2) {
+      return res
+        .status(400)
+        .json({ message: "title должен содержать минимум 2 символа" });
+    }
+
+    // если не указан titleEn
+    if (!cleanTitleEn || cleanTitleEn.length < 2) {
       return res
         .status(400)
         .json({ message: "title должен содержать минимум 2 символа" });
@@ -187,6 +197,7 @@ router.post("/artworks", async (req: Request, res: Response) => {
     const artwork = await prisma.artwork.create({
       data: {
         title: cleanTitle,
+        titleEn: cleanTitleEn,
         slug: cleanSlug,
         description,
         year,
@@ -195,8 +206,8 @@ router.post("/artworks", async (req: Request, res: Response) => {
         materials,
         priceCents,
         currency,
-        artworkGroup: artworkGroup || "PAINTING_AND_WALL_ART",
-        category: category || "PAINTING",
+        artworkGroup: artworkGroup,
+        category:  category,
         isPublished,
       },
     });
@@ -254,6 +265,7 @@ router.patch("/artworks/:id", async (req: Request, res: Response) => {
   const id = req.params.id as string;
   const {
     title,
+    titleEn,
     slug,
     description,
     year,
@@ -284,6 +296,8 @@ router.patch("/artworks/:id", async (req: Request, res: Response) => {
 
     // Инициализируем все строковые поля для корректной работы
     const cleanTitle = typeof title === "string" ? title.trim() : undefined;
+    const cleanTitleEn =
+      typeof titleEn === "string" ? titleEn.trim() : undefined;
     const cleanSlug = typeof slug === "string" ? slug.trim() : undefined;
     const cleanDescription =
       typeof description === "string" ? description.trim() : undefined;
@@ -293,7 +307,13 @@ router.patch("/artworks/:id", async (req: Request, res: Response) => {
       typeof currency === "string" ? currency.trim() : undefined;
 
     // были ли поля переданы в запросе для наименования
-    if (title !== undefined && (!cleanTitle || cleanTitle.length < 2)) {
+    if (title !== undefined && (!cleanTitleEn || cleanTitleEn.length < 2)) {
+      return res
+        .status(400)
+        .json({ message: "title должен содержать минимум 2 символа" });
+    }
+    // были ли поля переданы в запросе для наименования
+    if (titleEn !== undefined && (!cleanTitle || cleanTitle.length < 2)) {
       return res
         .status(400)
         .json({ message: "title должен содержать минимум 2 символа" });
@@ -407,6 +427,7 @@ router.patch("/artworks/:id", async (req: Request, res: Response) => {
 
     // инициализаци объекта data
     if (cleanTitle !== undefined) data.title = cleanTitle;
+    if (cleanTitleEn !== undefined) data.titleEn = cleanTitleEn;
     if (cleanSlug !== undefined) data.slug = cleanSlug;
     if (cleanDescription !== undefined)
       data.description = cleanDescription || null;
