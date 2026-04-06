@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
     Box,
     Button,
@@ -14,8 +14,38 @@ import {
     TextField,
     Typography,
 } from "@mui/material";
+import { useNavigate, useParams } from "react-router-dom";
+import { api } from "../../../lib/api"
+import type { AxiosError } from "axios";
+
+type PublicationType = "NEWS" | "APHORISM" | "ESSAY" | "ARTICLE" | "REVIEW";
+
+type PublicationFull = {
+    id: string;
+    type: PublicationType;
+    title: string | null;
+    titleEn: string | null;
+    slug: string | null;
+    body: string | null;
+    bodyEn: string | null;
+    quoteText: string | null;
+    quoteTextEn: string | null;
+    isPublished: boolean;           // всегда есть, не null
+    publishedAt: string | null;     // может быть null
+    coverImage: {
+        id: string;
+        url: string;
+    } | null;                       // может быть null
+};
 
 export default function AdminPublicationEditPage() {
+    const navigate = useNavigate(); // навигация 
+    const { id } = useParams(); // параметр id 
+    const [publication, setPublication] = useState<PublicationFull | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState("");
+
     const [type, setType] = useState<PublicationType>("NEWS");
     const [title, setTitle] = useState("");
     const [titleEn, setTitleEn] = useState("");
@@ -34,6 +64,15 @@ export default function AdminPublicationEditPage() {
         }),
         [],
     );
+
+
+    const TYPE_OPTIONS: Array<{ value: PublicationType; label: string }> = [
+        { value: "NEWS", label: "Новости" },
+        { value: "APHORISM", label: "Афоризм" },
+        { value: "ESSAY", label: "Эссе" },
+        { value: "ARTICLE", label: "Статья" },
+        { value: "REVIEW", label: "Отзыв" },
+    ];
 
     const sharedInputSx = useMemo(
         () => ({
@@ -55,6 +94,75 @@ export default function AdminPublicationEditPage() {
     );
 
     const isAphorism = type === "APHORISM";
+
+
+    //  получение одной публикации с сервера
+    async function loadPublication() {
+        try {
+            //  вызовы setState происходят до любых асинхронных операций (до await api.patch)
+            setError("");
+            // маршрут для получения публикации
+            const res = await api.get(`/api/admin/publications/${id}`);
+            const data: PublicationFull = res.data
+            setPublication(data); // // принимаем публикацию с сервера 
+            setTitle(data.title ?? "");
+            setTitleEn(data.titleEn ?? "");
+            setSlug(data.slug ?? "");
+            setBody(data.body ?? "");
+            setBodyEn(data.bodyEn ?? "");
+            setQuoteText(data.quoteText ?? "");
+            setQuoteTextEn(data.quoteTextEn ?? "");
+            setIsPublished(data.isPublished);
+            setPublishedAt(data.publishedAt ?? "");
+        } catch (error) {
+            const err = error as AxiosError<{ message?: string }>;
+            setError(err.response?.data?.message || "Ошибка загрузки картины");
+        } finally {
+            setLoading(false);
+        }
+
+
+    }
+
+    // вызываем функцию loadPublication для получения публикации 
+    useEffect(() => {
+        if (!id) return;
+        loadPublication();
+    }, [id]);
+
+
+    // функция для изменения публикации 
+    async function handleSavePublication(e: React.FormEvent) {
+        // убираем стандарное поведение 
+        e.preventDefault();
+        setSaving(true);
+        setError("");
+
+        try {
+            const payload = {
+                type,
+                title: title.trim(),
+                titleEn: titleEn.trim(),
+                slug: slug.trim(),
+                body: body.trim(),
+                bodyEn: bodyEn.trim(),
+                quoteText: quoteText.trim(),
+                quoteTextEn: quoteTextEn.trim(),
+                isPublished,
+                publishedAt: publishedAt.trim(),
+            }
+            const res = await api.patch(`/api/admin/publications/${id}`, payload);
+            setPublication(res.data);
+            navigate("/admin/publications")
+
+        } catch (error) {
+            const err = error as AxiosError<{ message?: string }>;
+            setError(err.response?.data?.message || "Ошибка сохранения");
+        } finally {
+            setSaving(false);
+        }
+
+    }
 
     return (
         <Box
@@ -130,200 +238,195 @@ export default function AdminPublicationEditPage() {
                         Редактировать публикацию
                     </Typography>
 
-                    <Stack spacing={2.5}>
-                        <FormControl fullWidth>
-                            <InputLabel id="publication-type-label">
-                                Тип публикации
-                            </InputLabel>
-                            <Select
-                                labelId="publication-type-label"
-                                label="Тип публикации"
-                                value={type}
-                                onChange={(event) =>
-                                    setType(event.target.value as PublicationType)
-                                }
-                            >
-                                {TYPE_OPTIONS.map((option) => (
-                                    <MenuItem key={option.value} value={option.value}>
-                                        {option.label}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                    <Box component="form" onSubmit={handleSavePublication}>
+                        <Stack spacing={2.5}>
+                            <FormControl fullWidth>
+                                <InputLabel id="publication-type-label">
+                                    Тип публикации
+                                </InputLabel>
+                                <Select
+                                    labelId="publication-type-label"
+                                    label="Тип публикации"
+                                    value={type}
+                                    onChange={(event) =>
+                                        setType(event.target.value as PublicationType)
+                                    }
+                                >
+                                    {TYPE_OPTIONS.map((option) => (
+                                        <MenuItem key={option.value} value={option.value}>
+                                            {option.label}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
 
-                        <TextField
-                            label="Название на русском"
-                            value={title}
-                            onChange={(event) => setTitle(event.target.value)}
-                            required={!isAphorism}
-                            fullWidth
-                            InputLabelProps={{ sx: sharedInputLabelSx }}
-                            InputProps={{ sx: sharedInputSx }}
-                        />
-
-                        <TextField
-                            label="Название на английском  (не обязательно)"
-                            value={titleEn}
-                            onChange={(event) => setTitleEn(event.target.value)}
-                            required={false}
-                            fullWidth
-                            InputLabelProps={{ sx: sharedInputLabelSx }}
-                            InputProps={{ sx: sharedInputSx }}
-                        />
-
-                        <TextField
-                            label="Slug"
-                            value={slug}
-                            onChange={(event) => setSlug(event.target.value)}
-                            required={!isAphorism}
-                            fullWidth
-                            helperText="Например: gory-na-zakate"
-                            InputLabelProps={{ sx: sharedInputLabelSx }}
-                            InputProps={{ sx: sharedInputSx }}
-                        />
-
-                        <TextField
-                            label="Текст на русском"
-                            value={body}
-                            onChange={(event) => setBody(event.target.value)}
-                            required={!isAphorism}
-                            multiline
-                            minRows={5}
-                            fullWidth
-                            InputLabelProps={{ sx: sharedInputLabelSx }}
-                            InputProps={{ sx: sharedInputSx }}
-                        />
-
-                        <TextField
-                            label="Текст на английском (не обязательно)"
-                            value={bodyEn}
-                            onChange={(event) => setBodyEn(event.target.value)}
-                            required={false}
-                            multiline
-                            minRows={5}
-                            fullWidth
-                            InputLabelProps={{ sx: sharedInputLabelSx }}
-                            InputProps={{ sx: sharedInputSx }}
-                        />
-
-                        <TextField
-                            label="Цитата"
-                            value={quoteText}
-                            onChange={(event) => setQuoteText(event.target.value)}
-                            required={isAphorism}
-                            multiline
-                            minRows={3}
-                            fullWidth
-                            InputLabelProps={{ sx: sharedInputLabelSx }}
-                            InputProps={{ sx: sharedInputSx }}
-                        />
-
-                        <TextField
-                            label="Цитата (EN)  (не обязательно)"
-                            value={quoteTextEn}
-                            onChange={(event) => setQuoteTextEn(event.target.value)}
-                            required={false}
-                            multiline
-                            minRows={3}
-                            fullWidth
-                            InputLabelProps={{ sx: sharedInputLabelSx }}
-                            InputProps={{ sx: sharedInputSx }}
-                        />
-
-                        <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
                             <TextField
-                                label="Дата публикации"
-                                value={publishedAt}
-                                onChange={(event) => setPublishedAt(event.target.value)}
-                                type="datetime-local"
+                                label="Название на русском"
+                                value={title}
+                                onChange={(event) => setTitle(event.target.value)}
+                                required={!isAphorism}
                                 fullWidth
-                                InputLabelProps={{ shrink: true, sx: sharedInputLabelSx }}
+                                InputLabelProps={{ sx: sharedInputLabelSx }}
                                 InputProps={{ sx: sharedInputSx }}
                             />
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={isPublished}
-                                        onChange={(event) =>
-                                            setIsPublished(event.target.checked)
-                                        }
-                                    />
-                                }
-                                label="Опубликовать"
-                            />
-                        </Stack>
 
-                        <Stack spacing={1}>
+                            <TextField
+                                label="Название на английском  (не обязательно)"
+                                value={titleEn}
+                                onChange={(event) => setTitleEn(event.target.value)}
+                                required={false}
+                                fullWidth
+                                InputLabelProps={{ sx: sharedInputLabelSx }}
+                                InputProps={{ sx: sharedInputSx }}
+                            />
+
+                            <TextField
+                                label="Slug"
+                                value={slug}
+                                onChange={(event) => setSlug(event.target.value)}
+                                required={!isAphorism}
+                                fullWidth
+                                helperText="Например: gory-na-zakate"
+                                InputLabelProps={{ sx: sharedInputLabelSx }}
+                                InputProps={{ sx: sharedInputSx }}
+                            />
+
+                            <TextField
+                                label="Текст на русском"
+                                value={body}
+                                onChange={(event) => setBody(event.target.value)}
+                                required={!isAphorism}
+                                multiline
+                                minRows={5}
+                                fullWidth
+                                InputLabelProps={{ sx: sharedInputLabelSx }}
+                                InputProps={{ sx: sharedInputSx }}
+                            />
+
+                            <TextField
+                                label="Текст на английском (не обязательно)"
+                                value={bodyEn}
+                                onChange={(event) => setBodyEn(event.target.value)}
+                                required={false}
+                                multiline
+                                minRows={5}
+                                fullWidth
+                                InputLabelProps={{ sx: sharedInputLabelSx }}
+                                InputProps={{ sx: sharedInputSx }}
+                            />
+
+                            <TextField
+                                label="Цитата"
+                                value={quoteText}
+                                onChange={(event) => setQuoteText(event.target.value)}
+                                required={isAphorism}
+                                multiline
+                                minRows={3}
+                                fullWidth
+                                InputLabelProps={{ sx: sharedInputLabelSx }}
+                                InputProps={{ sx: sharedInputSx }}
+                            />
+
+                            <TextField
+                                label="Цитата (EN)  (не обязательно)"
+                                value={quoteTextEn}
+                                onChange={(event) => setQuoteTextEn(event.target.value)}
+                                required={false}
+                                multiline
+                                minRows={3}
+                                fullWidth
+                                InputLabelProps={{ sx: sharedInputLabelSx }}
+                                InputProps={{ sx: sharedInputSx }}
+                            />
+
+                            <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+                                <TextField
+                                    label="Дата публикации"
+                                    value={publishedAt}
+                                    onChange={(event) => setPublishedAt(event.target.value)}
+                                    type="datetime-local"
+                                    fullWidth
+                                    InputLabelProps={{ shrink: true, sx: sharedInputLabelSx }}
+                                    InputProps={{ sx: sharedInputSx }}
+                                />
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={isPublished}
+                                            onChange={(event) =>
+                                                setIsPublished(event.target.checked)
+                                            }
+                                        />
+                                    }
+                                    label="Опубликовать"
+                                />
+                            </Stack>
+
+                            <Stack spacing={1}>
+                                <Button
+                                    variant="outlined"
+                                    component="label"
+                                    sx={{
+                                        alignSelf: "flex-start",
+                                        textTransform: "none",
+                                        borderRadius: 999,
+                                        borderColor: "rgba(143, 97, 70, 0.7)",
+                                        color: "#6b3f26",
+                                        fontFamily:
+                                            '"Source Sans 3", "Helvetica Neue", Arial, sans-serif',
+                                        "&:hover": {
+                                            borderColor: "rgba(143, 97, 70, 0.95)",
+                                            background: "rgba(255, 248, 241, 0.7)",
+                                        },
+                                    }}
+                                >
+                                    Загрузить изображение
+                                    <input hidden type="file" accept="image/*" />
+                                </Button>
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        color: "rgba(79, 54, 38, 0.7)",
+                                        fontFamily:
+                                            '"Source Sans 3", "Helvetica Neue", Arial, sans-serif',
+                                    }}
+                                >
+                                    Поддерживаются JPG, PNG, WEBP
+                                </Typography>
+                            </Stack>
+
                             <Button
-                                variant="outlined"
-                                component="label"
+                                variant="contained"
+                                type="submit"
                                 sx={{
                                     alignSelf: "flex-start",
+                                    mt: 1,
                                     textTransform: "none",
+                                    fontWeight: 600,
                                     borderRadius: 999,
-                                    borderColor: "rgba(143, 97, 70, 0.7)",
-                                    color: "#6b3f26",
-                                    fontFamily:
-                                        '"Source Sans 3", "Helvetica Neue", Arial, sans-serif',
+                                    px: 4,
+                                    py: 1.1,
+                                    background:
+                                        "linear-gradient(135deg, #b86b3e 0%, #c67b4e 50%, #a85b33 100%)",
+                                    boxShadow:
+                                        "0 16px 30px rgba(93, 55, 33, 0.3), 0 0 0 1px rgba(140, 88, 58, 0.4)",
                                     "&:hover": {
-                                        borderColor: "rgba(143, 97, 70, 0.95)",
-                                        background: "rgba(255, 248, 241, 0.7)",
+                                        background:
+                                            "linear-gradient(135deg, #d0834f 0%, #c67447 50%, #9e512c 100%)",
+                                        boxShadow:
+                                            "0 18px 36px rgba(93, 55, 33, 0.38), 0 0 0 1px rgba(140, 88, 58, 0.55)",
                                     },
                                 }}
                             >
-                                Загрузить изображение
-                                <input hidden type="file" accept="image/*" />
+                                Сохранить
                             </Button>
-                            <Typography
-                                variant="caption"
-                                sx={{
-                                    color: "rgba(79, 54, 38, 0.7)",
-                                    fontFamily:
-                                        '"Source Sans 3", "Helvetica Neue", Arial, sans-serif',
-                                }}
-                            >
-                                Поддерживаются JPG, PNG, WEBP
-                            </Typography>
                         </Stack>
-
-                        <Button
-                            variant="contained"
-                            type="button"
-                            sx={{
-                                alignSelf: "flex-start",
-                                mt: 1,
-                                textTransform: "none",
-                                fontWeight: 600,
-                                borderRadius: 999,
-                                px: 4,
-                                py: 1.1,
-                                background:
-                                    "linear-gradient(135deg, #b86b3e 0%, #c67b4e 50%, #a85b33 100%)",
-                                boxShadow:
-                                    "0 16px 30px rgba(93, 55, 33, 0.3), 0 0 0 1px rgba(140, 88, 58, 0.4)",
-                                "&:hover": {
-                                    background:
-                                        "linear-gradient(135deg, #d0834f 0%, #c67447 50%, #9e512c 100%)",
-                                    boxShadow:
-                                        "0 18px 36px rgba(93, 55, 33, 0.38), 0 0 0 1px rgba(140, 88, 58, 0.55)",
-                                },
-                            }}
-                        >
-                            Сохранить
-                        </Button>
-                    </Stack>
+                    </Box>
                 </CardContent>
             </Card>
         </Box>
     );
 }
 
-type PublicationType = "NEWS" | "APHORISM" | "ESSAY" | "ARTICLE" | "REVIEW";
 
-const TYPE_OPTIONS: Array<{ value: PublicationType; label: string }> = [
-    { value: "NEWS", label: "Новости" },
-    { value: "APHORISM", label: "Афоризм" },
-    { value: "ESSAY", label: "Эссе" },
-    { value: "ARTICLE", label: "Статья" },
-    { value: "REVIEW", label: "Отзыв" },
-];
+

@@ -236,7 +236,7 @@ router.post("/publications", async (req: Request, res: Response) => {
 router.get("/publications/:id", async (req: Request, res: Response) => {
   try {
     // берем id из параметров
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     if (!isUUID(id)) {
       return res.status(400).json({ message: "Некорректный id" });
@@ -255,6 +255,164 @@ router.get("/publications/:id", async (req: Request, res: Response) => {
     return res.json(publication);
   } catch (error) {
     console.error("GET /publications/:id error:", error);
+    return res.status(500).json({ message: "Ошибка сервера" });
+  }
+});
+
+// PATCH /api/admin/publications/:id
+router.patch("/publications/:id", async (req: Request, res: Response) => {
+  try {
+    // берем id из параметров
+    const id = req.params.id as string;
+
+    if (!isUUID(id)) {
+      return res.status(400).json({ message: "Некорректный id" });
+    }
+
+    // проверка на существование публикации
+    const existingPublication = await prisma.publication.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        type: true,
+      },
+    });
+
+    if (!existingPublication) {
+      return res.status(404).json({ message: "Публикация не найдена" });
+    }
+
+    const {
+      type,
+      title,
+      titleEn,
+      slug,
+      body,
+      bodyEn,
+      quoteText,
+      quoteTextEn,
+      isPublished,
+      publishedAt,
+    } = req.body;
+
+    // валидация для type
+    if (
+      type !== undefined &&
+      !Object.values(PublicationType).includes(type as PublicationType)
+    ) {
+      return res.status(400).json({ message: "Некорректный тип публикации" });
+    }
+
+    // update для type
+    const nextType =
+      (type as PublicationType | undefined) ?? existingPublication.type;
+
+    // normalize для строк
+    const cleanTitle = normalizeNullableString(title);
+    const cleanTitleEn = normalizeNullableString(titleEn);
+    const cleanSlug = normalizeNullableString(slug);
+    const cleanBody = normalizeNullableString(body);
+    const cleanBodyEn = normalizeNullableString(bodyEn);
+    const cleanQuoteText = normalizeNullableString(quoteText);
+    const cleanQuoteTextEn = normalizeNullableString(quoteTextEn);
+
+    // собираем будущие знаяения для валидации
+    const currentPublication = await prisma.publication.findUnique({
+      where: { id },
+      select: {
+        title: true,
+        titleEn: true,
+        slug: true,
+        body: true,
+        bodyEn: true,
+        quoteText: true,
+        quoteTextEn: true,
+      },
+    });
+
+    if (!currentPublication) {
+      return res.status(404).json({ message: "Публикция не найена" });
+    }
+
+    const merged = {
+      type: nextType,
+      title: cleanTitle !== undefined ? cleanTitle : currentPublication.title,
+      titleEn:
+        cleanTitleEn !== undefined ? cleanTitleEn : currentPublication.titleEn,
+      slug: cleanSlug !== undefined ? cleanSlug : currentPublication.slug,
+      body: cleanBody !== undefined ? cleanBody : currentPublication.body,
+      bodyEn:
+        cleanBodyEn !== undefined ? cleanBodyEn : currentPublication.bodyEn,
+      quoteText:
+        cleanQuoteText !== undefined
+          ? cleanQuoteText
+          : currentPublication.quoteText,
+      quoteTextEn:
+        cleanQuoteTextEn !== undefined
+          ? cleanQuoteTextEn
+          : currentPublication.quoteTextEn,
+    };
+
+    // валидация. предосталвенных данных
+    const validationError = validatePublicationFields({
+      type: merged.type,
+      title: merged.title ?? undefined,
+      titleEn: merged.titleEn ?? undefined,
+      slug: merged.slug ?? undefined,
+      body: merged.body ?? undefined,
+      bodyEn: merged.bodyEn ?? undefined,
+      quoteText: merged.quoteText ?? undefined,
+      quoteTextEn: merged.quoteTextEn ?? undefined,
+    });
+
+    if (validationError) {
+      return res
+        .status(400)
+        .json({ message: `validationError = ${validationError}` });
+    }
+
+    // если публикация существвет но статуc
+    if (isPublished !== undefined && typeof isPublished !== "boolean") {
+      return res.status(400).json({ message: "isPublished не верный тип" });
+    }
+
+    // валидируем дату
+    let parsedPublishedAt: Date | null | undefined;
+
+    try {
+      parsedPublishedAt = parseOptionalDate(publishedAt);
+    } catch {
+      return res.status(400).json({ message: "Не корректный формат" });
+    }
+
+    // данные для изменения
+    const data: Record<string, unknown> = {};
+    if (type !== undefined) data.type = type;
+    if (cleanTitle !== undefined) data.title = title;
+    if (cleanTitleEn !== undefined) data.titleEn = titleEn;
+    if (cleanSlug !== undefined) data.slug = slug;
+    if (cleanBody !== undefined) data.body = body;
+    if (cleanBodyEn !== undefined) data.bodyEn = bodyEn;
+    if (cleanQuoteText !== undefined) data.quoteText = quoteText;
+    if (cleanQuoteTextEn !== undefined) data.quoteTextEn = quoteTextEn;
+    if (isPublished !== undefined) data.isPublished = isPublished;
+    if (publishedAt !== undefined) data.publishedAt = parsedPublishedAt;
+
+    // если данные были не переданы
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ message: "Данные были не переданы" });
+    }
+
+    // обновление
+    const update = await prisma.publication.update({
+      where: { id },
+      data,
+      include: { coverImage: true },
+    });
+
+    return res.json(update);
+  } catch (error) {
+    console.error("PATCH /publications/:id error:", error);
     return res.status(500).json({ message: "Ошибка сервера" });
   }
 });

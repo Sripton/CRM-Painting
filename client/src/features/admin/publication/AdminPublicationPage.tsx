@@ -12,12 +12,26 @@ import {
 import { useNavigate } from "react-router-dom";
 import { api } from "../../../lib/api";
 
+type PublicationType = "NEWS" | "APHORISM" | "ESSAY" | "ARTICLE" | "REVIEW";
+
+type PublicationListItem = {
+    id: string;
+    type: PublicationType;
+    title: string | null;
+    slug: string | null;
+    body: string | null;
+    quoteText: string | null;
+
+};
+
+
 export default function AdminPublicationPage() {
     const navigate = useNavigate();
     const [publications, setPublications] = useState<PublicationListItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    // выбор типа публикации 
     const typeLabel = useMemo(
         () => ({
             NEWS: "Новости",
@@ -28,8 +42,9 @@ export default function AdminPublicationPage() {
         }),
         [],
     );
-    console.log("publications", publications)
 
+
+    // дергаем router.get("/publications") для получения списка всех публикаций 
     useEffect(() => {
         async function loadPublications() {
             try {
@@ -46,10 +61,12 @@ export default function AdminPublicationPage() {
         loadPublications();
     }, []);
 
+    // кнопка перехода для создания публикаций
     const handleCreate = () => {
         navigate("/admin/publications/create");
     };
 
+    // кнопка перехода для редатирования публикаций
     const handleEdit = (id: string) => {
         navigate(`/admin/publications/edit/${id}`);
     };
@@ -255,28 +272,7 @@ export default function AdminPublicationPage() {
                                         justifyContent: "flex-end",
                                     }}
                                 >
-                                    <Button
-                                        variant="outlined"
-                                        size="small"
-                                        sx={{
-                                            textTransform: "none",
-                                            borderRadius: 999,
-                                            borderColor:
-                                                "rgba(143, 97, 70, 0.7)",
-                                            color: "#6b3f26",
-                                            fontFamily:
-                                                '"Source Sans 3", "Helvetica Neue", Arial, sans-serif',
-                                            "&:hover": {
-                                                borderColor:
-                                                    "rgba(143, 97, 70, 0.95)",
-                                                background:
-                                                    "rgba(255, 248, 241, 0.7)",
-                                            },
-                                        }}
-                                        onClick={() => handleEdit(publication.id)}
-                                    >
-                                        Редактировать
-                                    </Button>
+
                                 </Stack>
                             </Card>
                         );
@@ -300,13 +296,3 @@ export default function AdminPublicationPage() {
         </Box>
     );
 }
-
-type PublicationType = "NEWS" | "APHORISM" | "ESSAY" | "ARTICLE" | "REVIEW";
-
-type PublicationListItem = {
-    id: string;
-    type: PublicationType;
-    title: string | null;
-    quoteText: string | null;
-    slug: string | null;
-};

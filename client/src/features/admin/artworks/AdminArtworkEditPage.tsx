@@ -92,7 +92,6 @@ export default function AdminArtworkEditPage() {
     // получение одной картины с сервера
     async function loadArtwork() {
         try {
-            setLoading(true);
             setError("");
             // маршрут для получения картины
             const res = await api.get(`/api/admin/artworks/${id}`);
@@ -125,7 +124,7 @@ export default function AdminArtworkEditPage() {
         loadArtwork()
     }, [id]);
 
-    async function handleSave(e: React.FormEvent) {
+    async function handleSaveArtwork(e: React.FormEvent) {
         // убираем стандарное поведение 
         e.preventDefault();
         setSaving(true);  // Блокировка повторных отправок
@@ -279,7 +278,7 @@ export default function AdminArtworkEditPage() {
                     >
                         Редактировать картину
                     </Typography>
-                    <Box component="form" onSubmit={handleSave}>
+                    <Box component="form" onSubmit={handleSaveArtwork}>
                         <Stack spacing={2.5}>
                             <TextField
                                 label="Название на русском"
