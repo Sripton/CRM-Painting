@@ -10,12 +10,12 @@ export default function PublicArtworkDetailsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from;
-  console.log("from", from);
 
   const [artwork, setArtwork] = useState<PublicArtwork | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // дергаем роутер get для получения всех картин 
   useEffect(() => {
     async function loadArtwork() {
       try {
@@ -23,7 +23,7 @@ export default function PublicArtworkDetailsPage() {
         setError("");
         const res = await api.get(`/api/public/artworks/${slug}`);
         setArtwork(res.data);
-      } catch (err) {
+      } catch  {
         setError("Не удалось загрузить картину");
       } finally {
         setLoading(false);

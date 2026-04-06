@@ -44,7 +44,7 @@ export default function PublicArtworksPage() {
         return groupArtworksByGroupAndCategory(artworks);
     }, [artworks]);
 
-    console.log("artworks", artworks)
+    console.log("artworks", artworks);
 
 
     if (loading) return <Typography>Загрузка...</Typography>;
@@ -190,6 +190,7 @@ export default function PublicArtworksPage() {
                                             animationDelay: "0.4s",
                                         },
                                     }}
+                                    onClick={() => navigate(`/artworks/bio`)}
                                 >
                                     Подробнее
                                     <Box component="span" className="catalog-dots">
@@ -333,10 +334,11 @@ export default function PublicArtworksPage() {
                                                             boxShadow: "0 10px 22px rgba(47, 54, 64, 0.18)",
                                                         },
                                                     }}
-                                                    onClick={() => navigate(`/artworks/${artwork.slug}`, 
-                                                        { state: { from: location }  // вручную передаём в страницу деталей объект location той страницы, с которой был переход.
+                                                    onClick={() => navigate(`/artworks/${artwork.slug}`,
+                                                        {
+                                                            state: { from: location }  // вручную передаём в страницу деталей объект location той страницы, с которой был переход.
 
-                                                    })}
+                                                        })}
                                                 />
                                             ))}
 

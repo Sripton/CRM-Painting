@@ -1,14 +1,33 @@
 import React from "react";
 import { Box } from "@mui/material";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
 export default function PublicLayout() {
+  const navigation = useNavigate();
+  const location = useLocation();
+
   // Массив навигационного меню 
   const navItems = [
+    "ГЛАВНАЯ",
     "ЛИТЕРАТУРА. НОВОСТИ",
     "СТАТЬИ. ОТЗЫВЫ",
     "КОНТАКТЫ",
   ];
+
+
+
+  const getPathByMenu = (menu: string) => {
+    if (menu === "ГЛАВНАЯ") return "/";
+    if (menu === "ЛИТЕРАТУРА. НОВОСТИ") return "/publications-news-aphorizm-essay";
+    if (menu === "СТАТЬИ. ОТЗЫВЫ") return "/publications-article-review";
+    if (menu === "КОНТАКТЫ") return "/contacts";
+    return "";
+  }
+
+  // для отображения активного меню 
+  const isActivePath = (menu: string) => {
+    return location.pathname === getPathByMenu(menu);
+  }
 
   return (
     <Box
@@ -51,11 +70,7 @@ export default function PublicLayout() {
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                md: "repeat(3, minmax(0, 220px))",
-              },
-              justifyContent: "center",
+              gridTemplateColumns: { xs: "1fr", md: "repeat(4, 1fr)" },
               gap: { xs: 0.8, md: 0.8 },
               py: { xs: 2, md: 1.5 },
               mt: { xs: -3, md: -4.5 },
@@ -64,32 +79,31 @@ export default function PublicLayout() {
             {navItems.map((label) => (
               <Box
                 key={label}
+                onClick={() => navigation(getPathByMenu(label))}
                 sx={{
+                  width: "100%",
                   position: "relative",
                   border: "1px solid #4a4f55",
-                  bgcolor: "#fbfbfa",
+                  bgcolor: isActivePath(label) ? "#dfe7ef" : "#fbfbfa",
                   textAlign: "center",
-                  py: { xs: 1.8, md: 1.7 },
                   px: { xs: 1.5, md: 2 },
+                  py: { xs: 1.8, md: 1.7 },
                   fontSize: { xs: 12, md: 13 },
                   fontWeight: 700,
                   letterSpacing: 1.5,
                   textTransform: "uppercase",
                   lineHeight: 1,
                   boxShadow: "0 1px 0 #cfd2d6",
-                  borderRadius: 2,
+                  borderRadius: 1.3,
                   cursor: "pointer",
                   color: "#2f3640",
                   fontFamily:
                     '"Playfair Display", "Georgia", "Times New Roman", serif',
-                  transition:
-                    "transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease, border-color 160ms ease",
                   "&:hover": {
-                    transform: "translateY(-2px)",
                     borderColor: "#4f6480",
                     bgcolor: "#f1f4f7",
                     boxShadow:
-                      "0 14px 30px rgba(47, 54, 64, 0.16), 0 0 0 1px rgba(90, 111, 138, 0.28)",
+                      "0 10px 22px rgba(47, 54, 64, 0.14), 0 0 0 1px rgba(90, 111, 138, 0.2)",
                     color: "#1f2a35",
                   },
                 }}

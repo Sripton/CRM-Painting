@@ -103,3 +103,48 @@ model Image {
 
   createdAt DateTime @default(now())
 }
+
+enum PublicationType {
+  NEWS
+  APHORISM
+  ESSAY
+  ARTICLE
+  REVIEW
+}
+
+model Publication {
+  id          String           @id @default(uuid())
+  type        PublicationType
+
+  title       String?
+  titleEn     String?
+  slug        String?          @unique
+
+  body        String?          @db.Text
+  bodyEn      String?          @db.Text
+
+  quoteText   String?          @db.Text
+  quoteTextEn String?          @db.Text
+
+  isPublished Boolean          @default(false)
+  publishedAt DateTime?
+
+  coverImage  PublicationImage?
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([type, isPublished, publishedAt])
+}
+
+model PublicationImage {
+  id            String       @id @default(uuid())
+
+  key           String       @unique
+  url           String
+  
+  publicationId String       @unique
+  publication   Publication  @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime     @default(now())
+}

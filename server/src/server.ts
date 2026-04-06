@@ -8,6 +8,7 @@ import authAPIRouter from "./api/auth/authRouter.js";
 import artWorkImageAPIRouter from "./api/admin/artworksImagesRouter.js";
 import adminArtworksRouter from "./api/admin/adminArtworksRouter.js";
 import publicArtWorksRouter from "./api/publicRouter/artworks.js";
+import adminPublicationsRouter from "./api/admin/adminPublication.js";
 const app = express();
 const PORT = process.env.PORT;
 
@@ -27,6 +28,7 @@ app.use("/api/public", publicArtWorksRouter);
 app.use("/api/auth", authAPIRouter);
 app.use("/api/admin", artWorkImageAPIRouter);
 app.use("/api/admin", adminArtworksRouter);
+app.use(`/api/admin`, adminPublicationsRouter);
 
 app.listen(PORT, () => {
   console.log(`Server start on ${PORT} PORT`);

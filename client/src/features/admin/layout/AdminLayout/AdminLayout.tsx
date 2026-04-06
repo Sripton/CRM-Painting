@@ -108,6 +108,17 @@ export default function AdminLayout() {
             >
               Создать картину
             </Button>
+            <Button
+              color="inherit"
+              sx={{
+                textTransform: "none",
+                color: "#4f3626",
+                "&:hover": { bgcolor: "rgba(178, 107, 58, 0.06)" },
+              }}
+              onClick={() => handleNav("/admin/publications")}
+            >
+              Публикации
+            </Button>
           </Box>
 
           <Button

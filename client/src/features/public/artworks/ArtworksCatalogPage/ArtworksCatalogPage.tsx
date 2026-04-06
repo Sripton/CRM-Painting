@@ -51,11 +51,6 @@ export default function ArtworksCatalogPage() {
     if (loading) return <Typography>Загрузка...</Typography>;
     if (error) return <Typography>{error}</Typography>;
 
-    console.log("group", group);
-    console.log("category", category);
-    console.log("filteredArtworks", filteredArtworks);
-
-
     return (
         <Box sx={{ py: 4 }}>
             <Container maxWidth="lg">
