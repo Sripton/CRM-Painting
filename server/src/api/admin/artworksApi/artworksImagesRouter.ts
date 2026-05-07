@@ -1,8 +1,15 @@
 import { Request, Response, Router } from "express";
 import multer from "multer";
-import { uploadBuffer, makeImageKey, deleteFromS3 } from "../../services/s3.js";
-import { prisma } from "../../db/prisma/prisma.js";
-import { requireAuth, requireAdmin } from "../../middlewares/authSecurity.js";
+import {
+  uploadBuffer,
+  makeImageKey,
+  deleteFromS3,
+} from "../../../services/s3.js";
+import { prisma } from "../../../db/prisma/prisma.js";
+import {
+  requireAuth,
+  requireAdmin,
+} from "../../../middlewares/authSecurity.js";
 import { validate as isUUID } from "uuid";
 
 const router = Router();

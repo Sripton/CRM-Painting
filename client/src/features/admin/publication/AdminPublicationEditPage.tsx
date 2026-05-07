@@ -1,5 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import {
+    Alert,
+    CircularProgress,
     Box,
     Button,
     Card,
@@ -41,11 +43,12 @@ type PublicationFull = {
 export default function AdminPublicationEditPage() {
     const navigate = useNavigate(); // навигация 
     const { id } = useParams(); // параметр id 
-    const [publication, setPublication] = useState<PublicationFull | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
+    const [uploading, setUploading] = useState(false);
 
+    const [publication, setPublication] = useState<PublicationFull | null>(null)
     const [type, setType] = useState<PublicationType>("NEWS");
     const [title, setTitle] = useState("");
     const [titleEn, setTitleEn] = useState("");
@@ -104,7 +107,7 @@ export default function AdminPublicationEditPage() {
             // маршрут для получения публикации
             const res = await api.get(`/api/admin/publications/${id}`);
             const data: PublicationFull = res.data
-            setPublication(data); // // принимаем публикацию с сервера 
+            setPublication(data);
             setTitle(data.title ?? "");
             setTitleEn(data.titleEn ?? "");
             setSlug(data.slug ?? "");
@@ -120,8 +123,6 @@ export default function AdminPublicationEditPage() {
         } finally {
             setLoading(false);
         }
-
-
     }
 
     // вызываем функцию loadPublication для получения публикации 
@@ -132,7 +133,7 @@ export default function AdminPublicationEditPage() {
 
 
     // функция для изменения публикации 
-    async function handleSavePublication(e: React.FormEvent) {
+    async function handleSavePublication(e: FormEvent<HTMLFormElement>) {
         // убираем стандарное поведение 
         e.preventDefault();
         setSaving(true);
@@ -151,8 +152,7 @@ export default function AdminPublicationEditPage() {
                 isPublished,
                 publishedAt: publishedAt.trim(),
             }
-            const res = await api.patch(`/api/admin/publications/${id}`, payload);
-            setPublication(res.data);
+            await api.patch(`/api/admin/publications/${id}`, payload);
             navigate("/admin/publications")
 
         } catch (error) {
@@ -161,7 +161,58 @@ export default function AdminPublicationEditPage() {
         } finally {
             setSaving(false);
         }
+    }
 
+    // функция загрузки image к публикации
+    async function handleUploadPublication(e: ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0]; // извлекаем первый выбранный файл
+
+        // Если файл не выбран или отсутствует  id публикации (из параметров маршрута), функция завершается досрочно.
+        if (!file || !id) return;
+
+        // Создаём объект FormData, который позволяет отправлять файлы через HTTP-запросы
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            // Управление состоянием загрузки
+            setUploading(true); // индикатор загрузки, блокируется повторный клик
+            setError(""); // состояние при ошибке
+
+            // Отправка запроса на сервер
+            await api.post(`/api/admin/publications/${id}/cover-image`, formData, {
+                headers: {
+                    //явно указываем multipart/form-data, что необходимо для передачи файла (браузер установит правильную границу автоматически, но явное указание помогает избежать ошибок) 
+                    "Content-type": "multipart/form-data",
+                }
+            });
+
+            // Обновление данных после успешной загрузки
+            await loadPublication();
+        } catch (error) {
+            const err = error as AxiosError<{ message?: string }>;
+            setError(err.response?.data?.message || "Ошибка загрузки изображения");
+
+        } finally {
+            setUploading(false);
+        }
+    }
+
+
+    // loading. если серверс подвис
+    if (loading) {
+        return (
+            <Box
+                sx={{
+                    minHeight: "100vh",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                }}
+            >
+                <CircularProgress />
+            </Box>
+        );
     }
 
     return (
@@ -240,6 +291,8 @@ export default function AdminPublicationEditPage() {
 
                     <Box component="form" onSubmit={handleSavePublication}>
                         <Stack spacing={2.5}>
+                            {/* Вывод ошибки */}
+                            {error && <Alert severity="error">{error}</Alert>}
                             <FormControl fullWidth>
                                 <InputLabel id="publication-type-label">
                                     Тип публикации
@@ -363,26 +416,34 @@ export default function AdminPublicationEditPage() {
                             </Stack>
 
                             <Stack spacing={1}>
-                                <Button
-                                    variant="outlined"
-                                    component="label"
-                                    sx={{
-                                        alignSelf: "flex-start",
-                                        textTransform: "none",
-                                        borderRadius: 999,
-                                        borderColor: "rgba(143, 97, 70, 0.7)",
-                                        color: "#6b3f26",
-                                        fontFamily:
-                                            '"Source Sans 3", "Helvetica Neue", Arial, sans-serif',
-                                        "&:hover": {
-                                            borderColor: "rgba(143, 97, 70, 0.95)",
-                                            background: "rgba(255, 248, 241, 0.7)",
-                                        },
-                                    }}
-                                >
-                                    Загрузить изображение
-                                    <input hidden type="file" accept="image/*" />
-                                </Button>
+
+                                {/* Загрузка картины */}
+                                <Box sx={{ mt: 5 }}>
+                                    {/* Загрузка файла */}
+                                    <Button variant="outlined"
+                                        component="label">
+                                        {uploading ? "Текущее изображение" : "Загрузить изображение"}
+                                        <input hidden type='file' accept="image/*" onChange={handleUploadPublication} />
+                                    </Button>
+                                    <Stack spacing={2} sx={{ mt: 3 }}>
+                                        {publication?.coverImage ? (
+                                            <Box sx={{ mt: 3 }}>
+                                                <img
+                                                    src={publication?.coverImage.url}
+                                                    style={{
+                                                        width: "100%",
+                                                        maxWidth: 320,
+                                                        borderRadius: 12,
+                                                        display: "block",
+                                                    }}
+                                                />
+                                            </Box>
+                                        ) : (
+                                            <Typography variant="body2">Изображений пока нет</Typography>
+
+                                        )}
+                                    </Stack>
+                                </Box>
                                 <Typography
                                     variant="caption"
                                     sx={{
@@ -398,6 +459,7 @@ export default function AdminPublicationEditPage() {
                             <Button
                                 variant="contained"
                                 type="submit"
+                                disabled={saving} // исключение повторног нажатия
                                 sx={{
                                     alignSelf: "flex-start",
                                     mt: 1,
@@ -418,15 +480,16 @@ export default function AdminPublicationEditPage() {
                                     },
                                 }}
                             >
-                                Сохранить
+                                {saving ? "Сохранение..." : "Сохранить"}
                             </Button>
                         </Stack>
                     </Box>
+
+
                 </CardContent>
             </Card>
         </Box>
     );
 }
-
 
 

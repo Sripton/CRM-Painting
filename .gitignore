@@ -1,0 +1,6 @@
+.env
+.env.production
+server/.env
+server/.env.production
+client/.env
+client/.env.production

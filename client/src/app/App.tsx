@@ -1,4 +1,3 @@
-import React from "react";
 import { Routes, Route, BrowserRouter } from "react-router-dom";
 import AdminRoute from "../routes/AdminRoute";
 
@@ -21,6 +20,7 @@ import AuthorBiography from "../features/public/artworks/AuthorBiography";
 import PublicPublicationNewsAphorismEssayPage from "../features/public/publications/PublicPublicationNewsAphorismEssayPage";
 import PublicPublicationArticleReviewPage from "../features/public/publications/PublicPublicationArticleReviewPage";
 import PublicContacts from "../features/public/publications/PublicContacts";
+import PublicationDetailsPage from "../features/public/publications/PublicationDetailsPage/PublicationDetailsPage";
 
 export default function App() {
   return (
@@ -35,6 +35,7 @@ export default function App() {
             <Route path="/artworks/bio" element={<AuthorBiography />} />
             <Route path="/publications-news-aphorizm-essay" element={<PublicPublicationNewsAphorismEssayPage />} />
             <Route path="/publications-article-review" element={<PublicPublicationArticleReviewPage />} />
+            <Route path="/publications/:id" element={<PublicationDetailsPage />} />
             <Route path="/contacts" element={<PublicContacts />} />
           </Route>
           {/* admin login */}

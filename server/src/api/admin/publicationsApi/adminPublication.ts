@@ -1,9 +1,9 @@
 import { Request, Response, Router } from "express";
-import { prisma } from "../../db/prisma/prisma.js";
+import { prisma } from "../../../db/prisma/prisma.js";
 import { PublicationType } from "@prisma/client";
-import { requireAuth, requireAdmin } from "../../middlewares/authSecurity.js";
+import { requireAuth, requireAdmin } from "../../../middlewares/authSecurity.js";
 import { validate as isUUID } from "uuid";
-
+import { deleteFromS3 } from "../../../services/s3.js";
 const router = Router();
 
 // Защита middleware
@@ -72,7 +72,7 @@ function validatePublicationFields(input: {
   }
 
   if (!slug || !isValidSlug(slug)) {
-    return "title должен содержать минимум 2 символа";
+    return "slug должен быть в формате: latin letters, numbers, hyphen";
   }
   if (!body || body.trim().length < 1) {
     return "body обязателен";
@@ -87,7 +87,7 @@ router.get("/publications", async (req: Request, res: Response) => {
     const search =
       typeof req.query.search === "string" ? req.query.search.trim() : "";
     const status =
-      typeof req.query.status === "boolean" ? req.query.status : "all";
+      typeof req.query.status === "string" ? req.query.status : "all";
     const type = typeof req.query.type === "string" ? req.query.type : "";
 
     const publications = await prisma.publication.findMany({
@@ -388,13 +388,13 @@ router.patch("/publications/:id", async (req: Request, res: Response) => {
     // данные для изменения
     const data: Record<string, unknown> = {};
     if (type !== undefined) data.type = type;
-    if (cleanTitle !== undefined) data.title = title;
-    if (cleanTitleEn !== undefined) data.titleEn = titleEn;
-    if (cleanSlug !== undefined) data.slug = slug;
-    if (cleanBody !== undefined) data.body = body;
-    if (cleanBodyEn !== undefined) data.bodyEn = bodyEn;
-    if (cleanQuoteText !== undefined) data.quoteText = quoteText;
-    if (cleanQuoteTextEn !== undefined) data.quoteTextEn = quoteTextEn;
+    if (cleanTitle !== undefined) data.title = cleanTitle;
+    if (cleanTitleEn !== undefined) data.titleEn = cleanTitleEn;
+    if (cleanSlug !== undefined) data.slug = cleanSlug;
+    if (cleanBody !== undefined) data.body = cleanBody;
+    if (cleanBodyEn !== undefined) data.bodyEn = cleanBodyEn;
+    if (cleanQuoteText !== undefined) data.quoteText = cleanQuoteText;
+    if (cleanQuoteTextEn !== undefined) data.quoteTextEn = cleanQuoteTextEn;
     if (isPublished !== undefined) data.isPublished = isPublished;
     if (publishedAt !== undefined) data.publishedAt = parsedPublishedAt;
 
@@ -410,9 +410,50 @@ router.patch("/publications/:id", async (req: Request, res: Response) => {
       include: { coverImage: true },
     });
 
+    // отправялем ответ
     return res.json(update);
   } catch (error) {
     console.error("PATCH /publications/:id error:", error);
+    return res.status(500).json({ message: "Ошибка сервера" });
+  }
+});
+
+// DELETE /api/admin/publications/:id
+router.delete("/publications/:id", async (req: Request, res: Response) => {
+  // Забираем парамметр id
+  const id = req.params.id as string;
+  try {
+    if (!isUUID(id)) {
+      return res.status(400).json({ message: "Некорректный id" });
+    }
+
+    // ищем публикацию по id
+    const publication = await prisma.publication.findUnique({
+      where: { id },
+      include: { coverImage: true },
+    });
+
+    // если публикация не найдена
+    if (!publication) {
+      return res.status(404).json({ message: "Публикация не найдена" });
+    }
+
+    // если у публикации существует coverImage
+    // сначала удаляем файл с помошью deleteFromS3
+    // а сама запись  PublicationImage удалится каскадом
+    if (publication.coverImage) {
+      await deleteFromS3({ key: publication?.coverImage?.key });
+    }
+
+    // удаляем запись
+    await prisma.publication.delete({
+      where: { id },
+    });
+
+    // отправялем успещный ответ при удалении
+    return res.status(200).json({ ok: true });
+  } catch (error) {
+    console.error("DELETE /publications/:id error:", error);
     return res.status(500).json({ message: "Ошибка сервера" });
   }
 });

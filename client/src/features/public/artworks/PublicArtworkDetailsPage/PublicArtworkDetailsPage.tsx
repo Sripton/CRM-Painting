@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Box, Button, Container, Stack, Typography } from "@mui/material";
 import { api } from "../../../../lib/api";

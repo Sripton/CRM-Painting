@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import {
+    Alert,
     Box,
     Button,
     Card,
     CardContent,
     Checkbox,
+    CircularProgress,
     FormControl,
     FormControlLabel,
     InputLabel,
@@ -20,8 +22,6 @@ import { api } from '../../../lib/api';
 import type { ArtworkGroup, ArtworkCategory } from "../../../artworksTypes/model";
 import { GROUP_LABELS, GROUP_CATEGORY_MAP, CATEGORY_LABELS } from "../../../artworksTypes/model"
 
-
-
 // тип Image
 type ImageItem = {
     id: string;
@@ -30,9 +30,6 @@ type ImageItem = {
     artworkId: string;
     createdAt: string;
 };
-
-
-
 
 // тип artwork
 type Artwork = {
@@ -159,7 +156,8 @@ export default function AdminArtworkEditPage() {
 
     }
 
-    async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    //функция загрузки image к картине 
+    async function handleUploadArtwork(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0]; // извлекаем первый выбранный файл
         // Если файл не выбран или отсутствует id картины (из параметров маршрута), функция завершается досрочно.
         if (!file || !id) return
@@ -223,6 +221,23 @@ export default function AdminArtworkEditPage() {
     ]
 
 
+    // loading. если серверс подвис
+    if (loading) {
+        return (
+            <Box
+                sx={{
+                    minHeight: "100vh",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                }}
+            >
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+
     return (
         <Box sx={{
             minHeight: "100vh",
@@ -280,6 +295,10 @@ export default function AdminArtworkEditPage() {
                     </Typography>
                     <Box component="form" onSubmit={handleSaveArtwork}>
                         <Stack spacing={2.5}>
+                            {/* Вывод ошибки */}
+                            {error && <Alert severity="error">{error}</Alert>}
+                            {/* Вывод об успехе */}
+                            {success && <Alert severity="success">{success}</Alert>}
                             <TextField
                                 label="Название на русском"
                                 value={title}
@@ -559,7 +578,7 @@ export default function AdminArtworkEditPage() {
                             disabled={uploading} // блокировака кнопки
                         >
                             {uploading ? "Текущее изображение" : "Загрузить изображение"}
-                            <input hidden type='file' accept="image/*" onChange={handleUpload} />
+                            <input hidden type='file' accept="image/*" onChange={handleUploadArtwork} />
                         </Button>
 
                         <Stack spacing={2} sx={{ mt: 3 }}>
@@ -568,7 +587,6 @@ export default function AdminArtworkEditPage() {
                             )}
                             {artwork?.image && (
                                 <Box sx={{ mt: 3 }}>
-
                                     <img
                                         src={artwork.image.url}
                                         alt={artwork.title}

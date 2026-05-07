@@ -1,0 +1,87 @@
+services:
+  # PostgreSQL — база данных
+  postgres:
+    image: postgres:17-alpine # официальный легкий образ Postgres
+    restart: unless-stopped # контейнер будет перезапускаться автоматически, пока явно его не остановить
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB} # имя базы
+      POSTGRES_USER: ${POSTGRES_USER} # пользователь
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} # пароль
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Данные БД сохраняются в Docker volume postgres_data, чтобы не пропадали после пересоздания контейнера.
+      #Docker проверяет, готов ли Postgres принимать подключения. каждые 10 секунд
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MinIO — S3-совместимое хранилище файлов
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001" #  запускает MinIO. хранит файлы в /data. веб-консоль администратора доступна на порту 9001
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER} # логин администратора
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD} # пароль администратора
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000" # API MinIO
+      - "${MINIO_CONSOLE_PORT:-9001}:9001" # веб-консоль
+    volumes:
+      - minio_data:/data # Файлы MinIO будут сохраняться в volume minio_data.
+
+  # minio-init — одноразовая инициализация MinIO
+  minio-init:
+    image: minio/mc:latest
+    restart: "no"
+    depends_on:
+      - minio
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        until mc alias set local http://minio:9000 "${MINIO_ROOT_USER}" "${MINIO_ROOT_PASSWORD}"; do
+          sleep 2
+        done
+        mc mb --ignore-existing local/${MINIO_BUCKET}
+        mc anonymous set download local/${MINIO_BUCKET}
+
+  # server — backend
+  server:
+    image: ${DOCKERHUB_NAMESPACE}/crm-painting-server:${APP_IMAGE_TAG:-latest}
+    platform: ${APP_PLATFORM:-linux/amd64}
+    restart: unless-stopped
+    env_file:
+      - ./server.env
+    environment:
+      PORT: 8080
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: ${MINIO_REGION:-us-east-1}
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      S3_BUCKET: ${MINIO_BUCKET}
+      S3_FORCE_PATH_STYLE: "true"
+      PUBLIC_FILES_BASE_URL: ${MINIO_PUBLIC_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
+
+  # client — frontend
+  client:
+    image: ${DOCKERHUB_NAMESPACE}/crm-painting-client:${APP_IMAGE_TAG:-latest}
+    platform: ${APP_PLATFORM:-linux/amd64}
+    restart: unless-stopped
+    depends_on: # Зависимость
+      - server
+    ports:
+      - "${CLIENT_PORT:-8080}:80"
+
+volumes:
+  postgres_data:
+  minio_data:

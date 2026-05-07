@@ -78,22 +78,24 @@ function requireEnv(name: string) {
 
 // Создаёт access-токен
 function signAccessToken(payload: { sub: string; role: string }) {
+  const expiresIn = (process.env.ACCESS_TTL || "15m") as StringValue;
   return jwt.sign(
     payload, // данные, которые будут вшиты в токен
     requireEnv("JWT_ACCESS_SECRET"), // Секрет берём из JWT_ACCESS_SECRET
     {
-      expiresIn: process.env.ACCESS_TTL || "15m", // Время жизни
+      expiresIn, // Время жизни
     },
   );
 }
 
 // создаём refresh-токен (долгоживущий), но с другим секретом и временем жизни
 function signRefreshToken(payload: { sub: string }) {
+  const expiresIn = (process.env.REFRESH_TTL || "30d") as StringValue;
   return jwt.sign(
     payload, // данные, которые будут вшиты в токен
     requireEnv("JWT_REFRESH_SECRET"), // // Секрет берём из JWT_ACCESS_SECRET
     {
-      expiresIn: process.env.REFRESH_TTL || "30d", // Время жизни
+      expiresIn, // Время жизни
     },
   );
 }
@@ -109,6 +111,8 @@ function sha256(input: string) {
 
 //для установки атрибута Secure у cookie
 const cookieSecure = process.env.COOKIE_SECURE === "true";
+
+
 
 // Маршрут для логирования
 router.post("/login", async (req: Request, res: Response) => {

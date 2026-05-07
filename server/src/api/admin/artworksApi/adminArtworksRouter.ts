@@ -1,9 +1,12 @@
 import { Request, Response, Router } from "express";
-import { requireAdmin, requireAuth } from "../../middlewares/authSecurity.js";
-import { prisma } from "../../db/prisma/prisma.js";
+import {
+  requireAdmin,
+  requireAuth,
+} from "../../../middlewares/authSecurity.js";
+import { prisma } from "../../../db/prisma/prisma.js";
 import { Prisma, ArtworkCategory, ArtworkGroup } from "@prisma/client";
 import { validate as isUUID } from "uuid";
-import { deleteFromS3 } from "../../services/s3.js";
+import { deleteFromS3 } from "../../../services/s3.js";
 
 const router = Router();
 
@@ -207,7 +210,7 @@ router.post("/artworks", async (req: Request, res: Response) => {
         priceCents,
         currency,
         artworkGroup: artworkGroup,
-        category:  category,
+        category: category,
         isPublished,
       },
     });

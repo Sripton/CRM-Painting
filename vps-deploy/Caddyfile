@@ -1,0 +1,23 @@
+{
+  email {$LETSENCRYPT_EMAIL}
+}
+
+{$APP_DOMAIN} {
+  encode zstd gzip
+
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "SAMEORIGIN"
+  }
+
+  handle /files/* {
+    uri strip_prefix /files
+    reverse_proxy minio:9000
+  }
+
+  handle {
+    reverse_proxy client:80
+  }
+}

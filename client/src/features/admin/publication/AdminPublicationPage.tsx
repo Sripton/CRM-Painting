@@ -9,6 +9,7 @@ import {
     Stack,
     Typography,
 } from "@mui/material";
+import { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../../lib/api";
 
@@ -30,6 +31,7 @@ export default function AdminPublicationPage() {
     const [publications, setPublications] = useState<PublicationListItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
 
     // выбор типа публикации 
     const typeLabel = useMemo(
@@ -66,11 +68,29 @@ export default function AdminPublicationPage() {
         navigate("/admin/publications/create");
     };
 
-    // кнопка перехода для редатирования публикаций
-    const handleEdit = (id: string) => {
-        navigate(`/admin/publications/edit/${id}`);
+    // функция удаления публикаций
+    const handleDelete = async (
+        event: React.MouseEvent<HTMLButtonElement>,
+        id: string,
+    ) => {
+        event.stopPropagation();
+        if (!window.confirm("Удалить публикацию?")) return;
+
+        try {
+            setDeletingId(id);
+            await api.delete(`/api/admin/publications/${id}`);
+            setPublications((prev) => prev.filter((item) => item.id !== id));
+        } catch (error) {
+            const err = error as AxiosError<{ message?: string }>;
+            window.alert(
+                err.response?.data?.message || "Ошибка удаления публикации",
+            );
+        } finally {
+            setDeletingId((current) => (current === id ? null : current));
+        }
     };
 
+    // loading. если серверс подвис
     if (loading) {
         return (
             <Box
@@ -230,6 +250,7 @@ export default function AdminPublicationPage() {
                                     bgcolor: "rgba(244, 250, 255, 0.96)",
                                     boxShadow:
                                         "0 18px 40px rgba(35, 85, 130, 0.16)",
+                                    cursor: "pointer"
                                 }}
                             >
                                 <CardContent sx={{ p: 2.5, flexGrow: 1 }}>
@@ -272,7 +293,30 @@ export default function AdminPublicationPage() {
                                         justifyContent: "flex-end",
                                     }}
                                 >
-
+                                    <Button
+                                        variant="outlined"
+                                        color="error"
+                                        size="small"
+                                        disabled={deletingId === publication.id}
+                                        onClick={(event) =>
+                                            handleDelete(event, publication.id)
+                                        }
+                                        sx={{
+                                            textTransform: "none",
+                                            borderRadius: 2,
+                                            borderColor: "rgba(184, 74, 74, 0.65)",
+                                            color: "#8f2f2f",
+                                            "&:hover": {
+                                                borderColor: "#b34444",
+                                                backgroundColor:
+                                                    "rgba(184, 74, 74, 0.08)",
+                                            },
+                                        }}
+                                    >
+                                        {deletingId === publication.id
+                                            ? "Удаление..."
+                                            : "Удалить"}
+                                    </Button>
                                 </Stack>
                             </Card>
                         );

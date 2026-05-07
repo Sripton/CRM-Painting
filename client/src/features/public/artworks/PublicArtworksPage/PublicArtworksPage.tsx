@@ -114,11 +114,12 @@ export default function PublicArtworksPage() {
                                     <Typography
                                         sx={{
                                             fontSize: { xs: 13, md: 14 },
+                                            fontWeight: 600,
                                             lineHeight: 1.3,
-                                            color: "#2f3640",
+                                            color: "#222831",
                                             whiteSpace: "pre-line",
                                             fontFamily:
-                                                '"Source Sans 3", "Helvetica Neue", Arial, sans-serif',
+                                                '"Spectral", "Georgia", "Times New Roman", serif',
                                         }}
                                     >
                                         {`Родился в 1942 году.
@@ -240,7 +241,7 @@ export default function PublicArtworksPage() {
                                                     width: "100%",
                                                     px: { xs: 1.5, md: 2 },
                                                     py: { xs: 1.8, md: 1.7 },
-                                                    fontSize: { xs: 12, md: 13 },
+                                                    fontSize: { xs: 13, md: 14 },
                                                     fontWeight: 700,
                                                     letterSpacing: 1.5,
                                                     textTransform: "uppercase",
@@ -249,7 +250,7 @@ export default function PublicArtworksPage() {
                                                     borderRadius: 1.3,
                                                     cursor: "pointer",
                                                     fontFamily:
-                                                        '"Playfair Display", "Georgia", "Times New Roman", serif',
+                                                        '"Bebas Neue", "Arial Narrow", Arial, sans-serif',
                                                     "&:hover": {
                                                         borderColor: "#4f6480",
                                                         bgcolor: "#f1f4f7",
@@ -417,69 +418,6 @@ export default function PublicArtworksPage() {
                 </Container>
             </Box>
 
-            <Box
-                component="footer"
-                sx={{
-                    borderTop: "1px solid #4a4f55",
-                    bgcolor: "#f2f2f1",
-                    px: { xs: 2.5, md: 4 },
-                    py: { xs: 3, md: 3.5 },
-                }}
-            >
-                <Container maxWidth={false} disableGutters sx={{ px: { xs: 2, md: 6 } }}>
-                    <Box sx={{ maxWidth: 1040, mx: "auto" }}>
-                        <Stack
-                            direction={{ xs: "column", md: "row" }}
-                            spacing={{ xs: 2, md: 6 }}
-                            justifyContent="space-between"
-                        >
-                            <Box>
-                                <Typography
-                                    sx={{
-                                        fontSize: 12,
-                                        letterSpacing: 1.4,
-                                        textTransform: "uppercase",
-                                        fontWeight: 700,
-                                        mb: 1,
-                                    }}
-                                >
-                                    Социальные сети
-                                </Typography>
-                                <Stack direction="row" spacing={2}>
-                                    <Typography sx={{ fontSize: 12, letterSpacing: 1 }}>
-                                        FACEBOOK
-                                    </Typography>
-                                    <Typography sx={{ fontSize: 12, letterSpacing: 1 }}>
-                                        TWITTER
-                                    </Typography>
-                                </Stack>
-                            </Box>
-                            <Box>
-                                <Typography
-                                    sx={{
-                                        fontSize: 12,
-                                        letterSpacing: 1.4,
-                                        textTransform: "uppercase",
-                                        fontWeight: 700,
-                                        mb: 1,
-                                    }}
-                                >
-                                    Контакты
-                                </Typography>
-                                <Typography sx={{ fontSize: 12, letterSpacing: 0.6 }}>
-                                    8 (926) 361-45-75
-                                </Typography>
-                                <Typography sx={{ fontSize: 12, letterSpacing: 0.6 }}>
-                                    Художник Газали-Дибир Израилов
-                                </Typography>
-                                <Typography sx={{ fontSize: 12, letterSpacing: 0.6 }}>
-                                    gazali_d@mail.ru
-                                </Typography>
-                            </Box>
-                        </Stack>
-                    </Box>
-                </Container>
-            </Box>
         </Box >
     )
 }

@@ -1,4 +1,4 @@
-import React, { useState, FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import {
     Box,
     Button,
@@ -26,7 +26,7 @@ export default function Login() {
     // забираем из context setAuth
     const { setAuth } = useAuth();
 
-    async function handleSubmit(e: React.FormEvent) {
+    async function handleSubmit(e: FormEvent<HTMLFormElement>) {
         // отключение стандартных функций
         e.preventDefault();
         setError("");
@@ -276,5 +276,4 @@ export default function Login() {
         </Box>
     );
 };
-
 

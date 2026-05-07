@@ -65,7 +65,8 @@ enum ArtworkCategory {
 model Artwork {
   id          String  @id @default(uuid())
   title       String
-  titleEn     String
+   
+        String
   slug        String  @unique // SEO и красивые URL
   description String?
   year        Int?
@@ -104,13 +105,7 @@ model Image {
   createdAt DateTime @default(now())
 }
 
-enum PublicationType {
-  NEWS
-  APHORISM
-  ESSAY
-  ARTICLE
-  REVIEW
-}
+ 
 
 model Publication {
   id          String           @id @default(uuid())
